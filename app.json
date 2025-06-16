@@ -12,8 +12,10 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.tradeved.app",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/Tradeved-icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true
@@ -37,6 +39,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c3242980-818b-427d-bdd1-78c850020f06"
+      }
     }
   }
 }
