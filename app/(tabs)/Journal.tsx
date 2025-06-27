@@ -1,9 +1,17 @@
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, Rect } from 'react-native-svg';
+import { Header } from '../../components/Header';
 
-// --- ProgressCircle from Quest.tsx ---
+const HEADER_HEIGHT = 100;
+const TABS_HEIGHT = 44;
+const FILTERS_HEIGHT = 40;
+const FIXED_TOP_HEIGHT = HEADER_HEIGHT + TABS_HEIGHT + FILTERS_HEIGHT;
+
+// --- ProgressCircle component update ---
 const ProgressCircle = ({ progress }: { progress: number }) => {
   const radius = 22;
   const circumference = 2 * Math.PI * radius;
@@ -11,25 +19,64 @@ const ProgressCircle = ({ progress }: { progress: number }) => {
 
   return (
     <View style={styles.progressCircleContainer}>
-      <View style={styles.progressCircleOuter}>
-        <Svg width={48} height={48}>
-          <Circle
-            cx={24}
-            cy={24}
-            r={radius}
-            stroke="#83c602"
-            strokeWidth={4}
-            fill="#23251f"
-            strokeLinecap="round"
-            strokeDasharray={`${circumference} ${circumference}`}
-            strokeDashoffset={progressOffset}
-            transform="rotate(-90 24 24)"
-          />
-        </Svg>
+      <Svg width={48} height={48}>
+        {/* Background circle */}
+        <Circle
+          cx={24}
+          cy={24}
+          r={radius}
+          stroke="#333"
+          strokeWidth={4}
+          fill="transparent"
+        />
+        {/* Pink segment */}
+        <Circle
+          cx={24}
+          cy={24}
+          r={radius}
+          stroke="#f472b6"
+          strokeWidth={4}
+          fill="transparent"
+          strokeDasharray={`${circumference * 0.2} ${circumference}`}
+          transform="rotate(-90 24 24)"
+        />
+        {/* Green progress */}
+        <Circle
+          cx={24}
+          cy={24}
+          r={radius}
+          stroke="#9bec00"
+          strokeWidth={4}
+          fill="transparent"
+          strokeDasharray={`${circumference * (progress/100)} ${circumference}`}
+          strokeDashoffset={0}
+          transform="rotate(-90 24 24)"
+        />
+      </Svg>
+      <View style={styles.progressTextContainer}>
+        <Text style={styles.winRateValue}>34</Text>
+        <Text style={styles.winRateDecimal}>.02</Text>
       </View>
-      <View style={styles.progressCircleInner}>
-        <Text style={styles.progressText}>{progress}%</Text>
+    </View>
+  );
+};
+
+// --- New VerticalProgressBar component ---
+const VerticalProgressBar = () => {
+  return (
+    <View style={styles.verticalBarContainer}>
+      <Text style={styles.barLabel}>14400</Text>
+      <View style={styles.barBackground}>
+        <LinearGradient
+          colors={['#9bec00', '#f472b6']}
+          style={styles.barGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+        />
       </View>
+      <Text style={styles.barLabel}>-10000</Text>
+      <Text style={styles.avgProfitLabel}>Avg. Profit{'\n'}Factor</Text>
+      <Text style={styles.avgProfitValue}>1.44</Text>
     </View>
   );
 };
@@ -130,10 +177,59 @@ const filters = [
 
 const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+const filterColors = [
+  '#e5c9a8', // User Management
+  '#fbcfe8', // Transaction Monitor
+  '#bae6fd', // Economic
+  '#d1fae5', // Security
+];
+
+const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+interface CalendarDay {
+  label?: string;
+  pnt?: number;
+  trades?: number;
+  color?: string;
+}
+
+const generateCalendarData = (date: Date): CalendarDay[][] => {
+  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const firstDayIndex = (firstDay.getDay() + 6) % 7; // Convert Sunday (0) to 6, and shift others back
+
+  const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  const weeksNeeded = Math.ceil((firstDayIndex + daysInMonth) / 7);
+
+  const calendarData: CalendarDay[][] = [];
+  let dayCounter = 1;
+
+  for (let week = 0; week < weeksNeeded; week++) {
+    const weekData: CalendarDay[] = [];
+    for (let day = 0; day < 7; day++) {
+      if ((week === 0 && day < firstDayIndex) || dayCounter > daysInMonth) {
+        weekData.push({});
+      } else {
+        weekData.push({
+          label: dayCounter.toString(),
+          pnt: Math.floor(Math.random() * 50000),
+          trades: Math.floor(Math.random() * 5) + 1,
+          color: '#bef264'
+        });
+        dayCounter++;
+      }
+    }
+    calendarData.push(weekData);
+  }
+
+  return calendarData;
+};
+
 export default function Journal() {
   const [activeTab, setActiveTab] = useState(0);
   const [activeFilter, setActiveFilter] = useState(0);
   const [activeChartTab, setActiveChartTab] = useState(0);
+  const [currentDate, setCurrentDate] = useState(new Date(2024, 6)); // July 2024
+  const [currentCalendarData, setCurrentCalendarData] = useState(generateCalendarData(new Date(2024, 6)));
   const router = useRouter();
 
   const handleTabPress = (i: number) => {
@@ -143,205 +239,525 @@ export default function Journal() {
     }
   };
 
+  const handleMonthChange = (direction: 'next' | 'prev') => {
+    const newDate = new Date(currentDate);
+    if (direction === 'next') {
+      newDate.setMonth(newDate.getMonth() + 1);
+    } else {
+      newDate.setMonth(newDate.getMonth() - 1);
+    }
+    setCurrentDate(newDate);
+    setCurrentCalendarData(generateCalendarData(newDate));
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: '#23251f' }}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Image source={require('../../assets/images/TradeVed LOGO.png')} style={styles.logo} />
-        <View style={styles.searchBar}>
-          <Text style={styles.searchIcon}>🔍</Text>
-          <Text style={styles.searchInput}>Search tags</Text>
-        </View>
-        <TouchableOpacity style={styles.profileButton}>
-          <Image source={require('../../assets/images/profile.png')} style={styles.profileImage} />
-        </TouchableOpacity>
-      </View>
+      {/* Header is the only fixed component */}
+      <Header />
 
-      {/* Tabs */}
-      <View style={styles.tabsRow}>
-        {tabs.map((tab, i) => (
-          <TouchableOpacity
-            key={tab}
-            style={[styles.tabButton, i === activeTab && styles.tabButtonActive]}
-            onPress={() => handleTabPress(i)}
-            activeOpacity={1}
-          >
-            <Text style={[styles.tabButtonText, i === activeTab && styles.tabButtonTextActive]}>{tab}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersRow}>
-        {filters.map((filter, i) => (
-          <TouchableOpacity
-            key={filter}
-            style={[styles.filterButton, i === activeFilter && styles.filterButtonActive]}
-            onPress={() => setActiveFilter(i)}
-          >
-            <Text style={[styles.filterButtonText, i === activeFilter && styles.filterButtonTextActive]}>{filter}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Calendar + Chart */}
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 32 }}>
-        {/* Month Row */}
-        <View style={styles.monthRow}>
-          <Text style={styles.monthText}>July, 2024</Text>
-          <Text style={styles.calendarIcon}>📅</Text>
-        </View>
-        {/* Weekdays */}
-        <View style={styles.weekDaysRow}>
-          {weekDays.map((d) => (
-            <Text key={d} style={styles.weekDayText}>{d}</Text>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: HEADER_HEIGHT }}>
+        {/* Tabs Row - More compact, matching screenshot */}
+        <View style={styles.tabsRow}>
+          {tabs.map((tab, i) => (
+            <TouchableOpacity
+              key={tab}
+              style={[styles.tabButton, i === activeTab && styles.tabButtonActive]}
+              onPress={() => handleTabPress(i)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.tabButtonText, i === activeTab && styles.tabButtonTextActive]}>{tab}</Text>
+            </TouchableOpacity>
           ))}
         </View>
-        {/* Calendar Grid */}
-        <View style={styles.calendarGrid}>
-          {calendarData.map((week, i) => (
-            <View key={i} style={styles.calendarWeek}>
-              {week.map((day, j) => day && day.label ? (
-                <View key={j} style={[styles.calendarDay, { backgroundColor: day.color }]}> 
-                  <Text style={styles.dayPnt}>{`₹${(day.pnt/1000).toFixed(1)}k`}</Text>
-                  <Text style={styles.dayTrades}>{day.trades} Trades</Text>
-                  <Text style={styles.dayLabel}>{day.label}</Text>
-                </View>
-              ) : (
-                <View key={j} style={styles.calendarDayEmpty} />
-              ))}
-            </View>
-          ))}
+
+        {/* Month Navigation Row */}
+        <View style={styles.monthNavigationRow}>
+          <View style={styles.monthYearContainer}>
+            <TouchableOpacity
+              style={styles.monthNavButton}
+              onPress={() => handleMonthChange('prev')}
+            >
+              <View style={styles.arrowBox}>
+                <Ionicons name="chevron-back" size={14} color="#9BEC00" />
+              </View>
+            </TouchableOpacity>
+
+            <Text style={styles.monthYearText}>
+              {months[currentDate.getMonth()]}, {currentDate.getFullYear()}
+            </Text>
+
+            <TouchableOpacity
+              style={styles.monthNavButton}
+              onPress={() => handleMonthChange('next')}
+            >
+              <View style={styles.arrowBox}>
+                <Ionicons name="chevron-forward" size={14} color="#9BEC00" />
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Filters Row */}
+        <View style={styles.filtersContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filtersContentContainer}
+          >
+            {filters.map((filter, i) => (
+              <TouchableOpacity
+                key={filter}
+                style={[
+                  styles.filterButton,
+                  { backgroundColor: i === activeFilter ? filterColors[i] : 'transparent' },
+                  { borderColor: filterColors[i] }
+                ]}
+                onPress={() => setActiveFilter(i)}
+                activeOpacity={0.8}
+              >
+                <Text style={[
+                  styles.filterButtonText,
+                  { color: i === activeFilter ? '#000000' : filterColors[i] }
+                ]}>{filter}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Calendar Section */}
+        <View style={styles.calendarSection}>
+          <View style={styles.weekDaysRow}>
+            {weekDays.map((d) => (
+              <Text key={d} style={styles.weekDayText}>{d}</Text>
+            ))}
+          </View>
+
+          <View style={styles.calendarGrid}>
+            {currentCalendarData.map((week, i) => (
+              <View key={i} style={styles.calendarWeek}>
+                {week.map((day, j) => day.label ? (
+                  <View key={j} style={[styles.calendarDay, { backgroundColor: day.color || '#bef264' }]}>
+                    {/* Date in top right */}
+                    <Text style={styles.dayLabel}>{day.label}</Text>
+
+                    {/* Amount in center */}
+                    <View style={styles.dayCenter}>
+                      <Text style={styles.dayPnt}>{`₹${((day.pnt || 0) / 1000).toFixed(1)}k`}</Text>
+                      <Text style={styles.dayTrades}>{day.trades || 0} Trades</Text>
+                    </View>
+
+                    {/* Bottom icons with numbers */}
+                    <View style={styles.dayBottom}>
+                      <View style={styles.dayBottomItem}>
+                        <Text style={styles.dayBottomIcon}>⚡</Text>
+                        <Text style={styles.dayBottomText}>2</Text>
+                      </View>
+                      <View style={styles.dayBottomItem}>
+                        <Text style={styles.dayBottomIcon}>🎯</Text>
+                        <Text style={styles.dayBottomText}>1</Text>
+                      </View>
+                    </View>
+                  </View>
+                ) : (
+                  <View key={j} style={styles.calendarDayEmpty} />
+                ))}
+              </View>
+            ))}
+          </View>
         </View>
 
         {/* Chart Section */}
         <View style={styles.chartSection}>
-          <View style={styles.chartHeader}>
-            <View>
-              <Text style={styles.netPnlLabel}>Net PnL</Text>
-              <Text style={styles.netPnlValue}>₹ 2,74,900</Text>
+          <View style={styles.chartContainer}>
+            <View style={styles.chartLeftSection}>
+              {/* Net PnL and Toggle Container */}
+              <View style={styles.topContainer}>
+                <View style={styles.netPnlContainer}>
+                  <Text style={styles.netPnlLabel}>Net PnL</Text>
+                  <Text style={styles.netPnlValue}>₹ 2,74,900</Text>
+                </View>
+                <View style={styles.toggleContainer}>
+                  <TouchableOpacity 
+                    onPress={() => setActiveChartTab(0)} 
+                    style={[styles.toggleButton, activeChartTab === 0 && styles.toggleButtonActive]}
+                  >
+                    <Text style={[styles.toggleText, activeChartTab === 0 && styles.toggleTextActive]}>Daily</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    onPress={() => setActiveChartTab(1)} 
+                    style={[styles.toggleButton, activeChartTab === 1 && styles.toggleButtonActive]}
+                  >
+                    <Text style={[styles.toggleText, activeChartTab === 1 && styles.toggleTextActive]}>Cumulative</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Bar Chart */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.barChartContainer}>
+                <Svg width={barChartData.length * 16} height={120}>
+                  {barChartData.map((bar, i) => (
+                    <Rect
+                      key={i}
+                      x={i * 16 + 4}
+                      y={bar.value >= 0 ? 60 - bar.value / 400 : 60}
+                      width={8}
+                      height={Math.abs(bar.value) / 400}
+                      fill={bar.color}
+                      rx={2}
+                    />
+                  ))}
+                  <Rect x={0} y={60} width={barChartData.length * 16} height={1} fill="#444" />
+                </Svg>
+              </ScrollView>
             </View>
-            <View style={{ alignItems: 'center' }}>
-              <ProgressCircle progress={34} />
-              <Text style={styles.winRateLabel}>Win %</Text>
-              <Text style={styles.winRateValue}>34.02</Text>
+
+            {/* Right Section with Progress */}
+            <View style={styles.chartRightSection}>
+              <View style={styles.progressContainer}>
+                <ProgressCircle progress={34} />
+                <Text style={styles.winRateLabel}>Win %</Text>
+              </View>
+              <VerticalProgressBar />
             </View>
           </View>
-          {/* Chart Tabs */}
-          <View style={styles.chartTabsRow}>
-            <TouchableOpacity onPress={() => setActiveChartTab(0)} style={[styles.chartTab, activeChartTab === 0 && styles.chartTabActive]}>
-              <Text style={[styles.chartTabText, activeChartTab === 0 && styles.chartTabTextActive]}>Daily</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setActiveChartTab(1)} style={[styles.chartTab, activeChartTab === 1 && styles.chartTabActive]}>
-              <Text style={[styles.chartTabText, activeChartTab === 1 && styles.chartTabTextActive]}>Cumulative</Text>
-            </TouchableOpacity>
-          </View>
-          {/* Bar Chart */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
-            <Svg width={barChartData.length * 16} height={120}>
-              {barChartData.map((bar, i) => (
-                <Rect
-                  key={i}
-                  x={i * 16 + 4}
-                  y={bar.value >= 0 ? 60 - bar.value / 400 : 60}
-                  width={8}
-                  height={Math.abs(bar.value) / 400}
-                  fill={bar.color}
-                  rx={2}
-                />
-              ))}
-              {/* X axis */}
-              <Rect x={0} y={60} width={barChartData.length * 16} height={2} fill="#444" />
-            </Svg>
-          </ScrollView>
-          {/* Chart Footer */}
-          <View style={styles.chartFooter}>
-            <View>
-              <Text style={styles.avgProfitLabel}>Avg. Profit Factor</Text>
-              <Text style={styles.avgProfitValue}>1.44</Text>
-            </View>
+
+          {/* Bottom Labels */}
+          <View style={styles.chartBottomLabels}>
+            <Text style={styles.dayWiseLabel}>Day Wise Breakup</Text>
+            <Text style={styles.footerMonth}>March 2024</Text>
           </View>
         </View>
-        {/* Footer */}
-        <Text style={styles.dayWiseLabel}>Day Wise Breakup</Text>
-        <Text style={styles.footerMonth}>March 2024</Text>
       </ScrollView>
-      
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
+  tabsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 32,
-    paddingHorizontal: 16,
     backgroundColor: '#23251f',
-    height: 80,
+    borderRadius: 8,
+    padding: 3,
+    margin: 8,
   },
-  logo: { width: 48, height: 32, resizeMode: 'contain' },
-  searchBar: {
+  tabButton: {
     flex: 1,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 6,
+  },
+  tabButtonActive: {
+    backgroundColor: '#9bec00',
+    borderWidth: 0.5,
+    borderColor: '#000000',
+  },
+  tabButtonText: {
+    color: '#e0e0e0',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  tabButtonTextActive: {
+    color: '#040404',
+    fontWeight: '600',
+  },
+  monthNavigationRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    backgroundColor: '#23251f',
+  },
+  monthYearContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  monthNavButton: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#1a1c16',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  arrowBox: {
+    width: 18,
+    height: 18,
+    // backgroundColor: '#2C2E27',
+    borderRadius: 6,
+    borderColor: '#9BEC00',
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  monthNavButtonText: {
+    color: '#9bec00',
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: -2,
+  },
+  monthYearText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  filtersContainer: {
+    // backgroundColor: '#1a1c16',
+    paddingVertical: 8,
+    marginHorizontal: 8,
+    borderRadius: 8,
+  },
+  filtersContentContainer: {
+    paddingHorizontal: 8,
+    gap: 8,
+  },
+  filterButton: {
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderColor: '#fec2e5',
+    borderWidth: 1,
+    minHeight: 22,
+    justifyContent: 'center',
+  },
+  filterButtonText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  calendarSection: {
+    paddingHorizontal: 8,
+    paddingTop: 8,
+  },
+  monthRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    marginBottom: 12,
+  },
+  monthText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  calendarIcon: { fontSize: 20, color: '#a3e635' },
+  weekDaysRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 8,
+    marginTop: 8,
+    gap: 4, // Match the gap of calendar cells
+  },
+  weekDayText: {
+    color: '#a3a3a3',
+    fontWeight: 'bold',
+    fontSize: 13,
+    width: 49, // Match the width of calendar cells
+    textAlign: 'center'
+  },
+  calendarGrid: {
+    marginTop: 10,
+    paddingHorizontal: 8,
+  },
+  calendarWeek: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start', // Change from space-between to flex-start
+    marginBottom: 4,
+    gap: 4, // Add consistent gap between cells
+  },
+  calendarDay: {
+    width: 49, // Fixed width
+    height: 46, // Fixed height
+    borderRadius: 4,
+    padding: 1,
+    position: 'relative',
+  },
+  dayLabel: {
+    position: 'absolute',
+    top: 2,
+    right: 6,
+    color: '#23251f',
+    fontSize: 8,
+    fontWeight: '600',
+  },
+  dayCenter: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  dayPnt: {
+    color: '#23251f',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  dayTrades: {
+    color: '#23251f',
+    fontSize: 8,
+    marginTop: -2,
+  },
+  dayBottom: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 2,
+    marginTop: 0,
+  },
+  dayBottomItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  dayBottomIcon: {
+    fontSize: 6,
+  },
+  dayBottomText: {
+    color: '#23251f',
+    fontSize: 6,
+    fontWeight: '500',
+  },
+  calendarDayEmpty: {
+    width: 49, // Match exactly with calendarDay width
+    height: 46, // Match exactly with calendarDay height
+  },
+  chartSection: {
+    backgroundColor: '#23251f',
+    borderRadius: 16,
+    margin: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  chartContainer: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  chartLeftSection: {
+    flex: 1,
+  },
+  topContainer: {
+    flexDirection: 'column',
+    gap: 12,
+  },
+  netPnlContainer: {
+    gap: 4,
+  },
+  netPnlLabel: {
+    color: '#a3a3a3',
+    fontSize: 13,
+  },
+  netPnlValue: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  toggleContainer: {
+    flexDirection: 'row',
     backgroundColor: '#31332b',
     borderRadius: 8,
-    marginHorizontal: 16,
-    paddingHorizontal: 12,
-    height: 36,
+    padding: 2,
   },
-  searchIcon: { fontSize: 16, color: '#a3a3a3', marginRight: 8 },
-  searchInput: { color: '#a3a3a3', fontSize: 14 },
-  profileButton: { width: 36, height: 36, borderRadius: 18, overflow: 'hidden', backgroundColor: '#31332b', alignItems: 'center', justifyContent: 'center' },
-  profileImage: { width: 32, height: 32, borderRadius: 16 },
-  tabsRow: { flexDirection: 'row', backgroundColor: '#23251f', paddingHorizontal: 8, paddingTop: 8, gap: 8 },
-  tabButton: { flex: 1, backgroundColor: '#31332b', borderRadius: 8, paddingVertical: 8, alignItems: 'center', marginHorizontal: 2 },
-  tabButtonActive: { backgroundColor: '#a3e635' },
-  tabButtonText: { color: '#fff', fontWeight: '500', fontSize: 14 },
-  tabButtonTextActive: { color: '#23251f' },
-  filtersRow: { flexDirection: 'row', paddingHorizontal: 8, paddingVertical: 8, backgroundColor: '#23251f', gap: 8 },
-  filterButton: { backgroundColor: '#31332b', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, marginRight: 8 },
-  filterButtonActive: { backgroundColor: '#a3e635' },
-  filterButtonText: { color: '#fff', fontSize: 13 },
-  filterButtonTextActive: { color: '#23251f', fontWeight: 'bold' },
-  monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: 8 },
-  monthText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
-  calendarIcon: { fontSize: 20, color: '#a3e635' },
-  weekDaysRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 8, marginTop: 8 },
-  weekDayText: { color: '#a3a3a3', fontWeight: 'bold', fontSize: 13, flex: 1, textAlign: 'center' },
-  calendarGrid: { marginTop: 4, paddingHorizontal: 8 },
-  calendarWeek: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  calendarDay: { flex: 1, backgroundColor: '#a3e635', borderRadius: 8, marginHorizontal: 2, alignItems: 'center', paddingVertical: 4, minHeight: 54, justifyContent: 'space-between' },
-  calendarDayEmpty: { flex: 1, marginHorizontal: 2, minHeight: 54 },
-  dayPnt: { color: '#23251f', fontWeight: 'bold', fontSize: 13 },
-  dayTrades: { color: '#23251f', fontSize: 11 },
-  dayLabel: { color: '#23251f', fontWeight: 'bold', fontSize: 11, marginTop: 2 },
-  chartSection: { backgroundColor: '#23251f', borderRadius: 16, margin: 16, padding: 16, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, elevation: 2 },
-  chartHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  netPnlLabel: { color: '#a3a3a3', fontSize: 13 },
-  netPnlValue: { color: '#fff', fontWeight: 'bold', fontSize: 20 },
-  winRateLabel: { color: '#a3a3a3', fontSize: 11, marginTop: 4 },
-  winRateValue: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
-  chartTabsRow: { flexDirection: 'row', marginTop: 8, gap: 8 },
-  chartTab: { flex: 1, backgroundColor: '#31332b', borderRadius: 8, paddingVertical: 6, alignItems: 'center' },
-  chartTabActive: { backgroundColor: '#a3e635' },
-  chartTabText: { color: '#fff', fontWeight: '500', fontSize: 13 },
-  chartTabTextActive: { color: '#23251f', fontWeight: 'bold' },
-  chartFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
-  avgProfitLabel: { color: '#a3a3a3', fontSize: 13 },
-  avgProfitValue: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  dayWiseLabel: { color: '#a3a3a3', fontSize: 13, marginLeft: 16, marginTop: 8 },
-  footerMonth: { color: '#a3a3a3', fontSize: 13, marginLeft: 16, marginTop: 2 },
-  bottomNav: { flexDirection: 'row', backgroundColor: '#23251f', borderTopWidth: 1, borderTopColor: '#31332b', height: 64, alignItems: 'center', justifyContent: 'space-around' },
-  navItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 4 },
-  navItemActive: { },
-  navIcon: { width: 24, height: 24, marginBottom: 2, resizeMode: 'contain' },
-  navText: { color: '#a3a3a3', fontSize: 11 },
-  navTextActive: { color: '#a3e635', fontWeight: 'bold' },
-  // ProgressCircle styles
-  progressCircleContainer: { width: 48, height: 48, justifyContent: 'center', alignItems: 'center', position: 'relative' },
-  progressCircleOuter: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#23251f', justifyContent: 'center', alignItems: 'center', position: 'relative' },
-  progressCircleInner: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#23251f', position: 'absolute', justifyContent: 'center', alignItems: 'center' },
-  progressText: { fontSize: 10, fontWeight: '600', color: '#a3e635', textAlign: 'center' },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 6,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  toggleButtonActive: {
+    backgroundColor: '#9bec00',
+  },
+  toggleText: {
+    color: '#fff',
+    fontSize: 13,
+  },
+  toggleTextActive: {
+    color: '#23251f',
+    fontWeight: '600',
+  },
+  barChartContainer: {
+    marginTop: 16,
+  },
+  chartRightSection: {
+    width: 80,
+    alignItems: 'center',
+    gap: 16,
+  },
+  progressContainer: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  winRateLabel: {
+    color: '#a3a3a3',
+    fontSize: 11,
+  },
+  progressCircleContainer: {
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  progressTextContainer: {
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  winRateValue: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  winRateDecimal: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  verticalBarContainer: {
+    alignItems: 'center',
+    height: 140,
+    justifyContent: 'space-between',
+  },
+  barBackground: {
+    width: 4,
+    height: 80,
+    backgroundColor: '#333',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  barGradient: {
+    width: '100%',
+    height: '100%',
+  },
+  barLabel: {
+    color: '#a3a3a3',
+    fontSize: 11,
+  },
+  avgProfitLabel: {
+    color: '#a3a3a3',
+    fontSize: 11,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  avgProfitValue: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  chartBottomLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#31332b',
+  },
+  dayWiseLabel: {
+    color: '#a3a3a3',
+    fontSize: 13,
+  },
+  footerMonth: {
+    color: '#a3a3a3',
+    fontSize: 13,
+  },
 });
