@@ -15,15 +15,19 @@ export const SpaceCard = ({ id, title, quests, spaceIcon, categories = ['Edu', '
 
   const handlePress = () => {
     router.push({
-      pathname: '/space-details/[id]',
+      pathname: '/quests/space-details/[id]',
       params: { id }
     });
   };
 
+  // Truncate title if too long
+  const MAX_TITLE_LENGTH = 15;
+  const displayTitle = title.length > MAX_TITLE_LENGTH ? title.slice(0, MAX_TITLE_LENGTH) + '...' : title;
+
   return (
     <TouchableOpacity style={styles.spaceCard} onPress={handlePress}>
       <Image source={spaceIcon} style={styles.spaceIcon} />
-      <Text style={styles.spaceTitle}>{title}</Text>
+      <Text style={styles.spaceTitle}>{displayTitle}</Text>
       <Text style={styles.spaceQuests}>{quests}</Text>
       <Text style={styles.categoriesLabel}>Categories</Text>
       <View style={styles.categoryContainer}>
@@ -75,6 +79,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     textAlign: 'center',
+    marginHorizontal: -20,
   },
   spaceQuests: {
     marginTop: -8,

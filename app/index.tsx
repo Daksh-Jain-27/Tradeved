@@ -118,7 +118,7 @@ const LoginSignupScreen = () => {
       // console.log(token);
   
       // Redirect to onboarding
-      router.replace('/onboarding');
+      // router.replace('/onboarding');
   
     } catch (error) {
       console.error('Signup error:', error);

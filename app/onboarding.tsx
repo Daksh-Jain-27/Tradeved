@@ -69,7 +69,7 @@ export default function Onboarding() {
     };
 
     const handleGetStarted = () => {
-        router.push('/(tabs)/quest');
+        router.push('/(tabs)/Quest');
     };
 
     return (

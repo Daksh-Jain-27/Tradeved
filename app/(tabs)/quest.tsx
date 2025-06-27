@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -26,7 +27,6 @@ import {
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { EventCard } from '../../components/EventCard';
-import { FeaturedQuestCard } from '../../components/FeaturedQuestCard';
 import { Header } from '../../components/Header';
 import { QuestCardItem } from '../../components/QuestCardItem';
 import { SpaceCard } from '../../components/SpaceCard';
@@ -176,6 +176,8 @@ type StylesType = {
   errorText: TextStyle;
   retryButton: ViewStyle;
   retryButtonText: TextStyle;
+  comingSoonOverlay: ViewStyle;
+  comingSoonText: TextStyle;
 };
 
 type TopicProgress = {
@@ -204,6 +206,8 @@ export default function Events() {
   const [downVotePercentage, setDownVotePercentage] = useState(30);
   const [showTopics, setShowTopics] = useState(false);
   const slideAnim = useRef(new Animated.Value(Dimensions.get('window').width)).current;
+  const [search, setSearch] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const [topicProgress] = useState<TopicProgress>({
     understanding: 10,
@@ -223,6 +227,35 @@ export default function Events() {
   const [spaceCards, setSpaceCards] = useState<SpaceCardItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Add state for featured quests
+  const [featuredQuests, setFeaturedQuests] = useState<any[]>([]);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
+  const [featuredError, setFeaturedError] = useState<string | null>(null);
+
+  // Memoized filtered quests and recommendations
+  const filteredQuests = useMemo(() => {
+    if (!search) return questCards;
+    return questCards.filter(q => q.questName.toLowerCase().includes(search.toLowerCase()));
+  }, [search, questCards]);
+
+  const recommendations = useMemo(() => {
+    if (!search) return [];
+    return questCards
+      .filter(q => q.questName.toLowerCase().includes(search.toLowerCase()))
+      .map(q => q.questName)
+      .slice(0, 5);
+  }, [search, questCards]);
+
+  const handleRecommendationPress = (rec: string) => {
+    setSearch(rec);
+    setShowDropdown(false);
+    // Find the quest by name
+    const quest = questCards.find(q => q.questName === rec);
+    if (quest) {
+      router.push({ pathname: '/quests/quest-details/[id]', params: { id: quest.id } });
+    }
+  };
 
   // Add fetch function for questCards
   const fetchQuestCards = async () => {
@@ -308,10 +341,41 @@ export default function Events() {
     }
   };
 
+  const fetchFeaturedQuests = async () => {
+    try {
+      setFeaturedLoading(true);
+      setFeaturedError(null);
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) {
+        setFeaturedError('Authentication required');
+        setFeaturedLoading(false);
+        return;
+      }
+      const response = await fetch('https://api.dev.tradeved.com/quest/feature', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch featured quests');
+      }
+      const data = await response.json();
+      console.log(data);
+      setFeaturedQuests(data.data || []);
+    } catch (err) {
+      setFeaturedError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setFeaturedLoading(false);
+    }
+  };
+
   // Add useEffect to fetch questCards
   useEffect(() => {
     fetchQuestCards();
     fetchSpaceCards();
+    fetchFeaturedQuests();
   }, []);
 
   const eventItems: EventItem[] = [
@@ -364,14 +428,18 @@ export default function Events() {
     },
   ];
 
-  // Combine and sort items to ensure alternating pattern
-  const featuredItems = eventItems.reduce<(EventItem | QuestItem)[]>((acc, event, index) => {
-    acc.push(event);
-    if (questItems[index]) {
-      acc.push(questItems[index]);
-    }
-    return acc;
-  }, []);
+  // Update the featuredItems section
+  const featuredItems = eventItems.map((event) => ({
+    ...event,
+    description: "Lorem ipsum dolor sit amet consectetur. In lorem diam ut sit et sed velit tincidunt.",
+    progress: {
+      current: "25k",
+      total: "50k"
+    },
+    reward: "100",
+    endDate: "23 July, 2024",
+    endTime: "15:30 IST"
+  }));
 
   const toggleTopics = (show: boolean) => {
     const toValue = show ? 0 : Dimensions.get('window').width;
@@ -386,11 +454,25 @@ export default function Events() {
     });
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      setSearch('');
+      setShowDropdown(false);
+    }, [])
+  );
+
   return (
     <SafeAreaView style={styles.container}>
-      <Header 
-        onProfilePress={() => {/* Handle profile press */}}
-        onSearchPress={() => {/* Handle search press */}}
+      <Header
+        onProfilePress={() => {/* Handle profile press */ }}
+        onSearchPress={() => setShowDropdown(true)}
+        value={search}
+        onChangeText={text => {
+          setSearch(text);
+          setShowDropdown(true);
+        }}
+        recommendations={showDropdown ? recommendations : []}
+        onRecommendationPress={handleRecommendationPress}
       />
       <ScrollView
         style={styles.content}
@@ -407,7 +489,7 @@ export default function Events() {
                 <Text style={styles.userLevel}>Level 18</Text>
               </View>
             </View>
-            <View style={styles.actionButtons}>
+            {/* <View style={styles.actionButtons}>
               <View style={styles.actionButtonWrapper}>
                 <View style={styles.actionIconContainer}>
                   <Image
@@ -432,7 +514,7 @@ export default function Events() {
                   <Text style={styles.navButtonText}>Shop</Text>
                 </View>
               </View>
-            </View>
+            </View> */}
           </View>
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
@@ -463,7 +545,7 @@ export default function Events() {
               />
               <Text style={styles.statValue}>50</Text>
             </View>
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={styles.statItem}
               onPress={() => toggleTopics(true)}
             >
@@ -471,7 +553,7 @@ export default function Events() {
                 <Text style={styles.topicsText}>Topics 15</Text>
                 <Ionicons name="chevron-down" size={16} color="#000" />
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </View>
 
@@ -483,23 +565,39 @@ export default function Events() {
           showsHorizontalScrollIndicator={false}
           style={styles.featuredContainer}
         >
-          {featuredItems.map((item) => (
-            <View key={item.id} style={styles.featuredEventCard}>
-              {'image' in item ? (
-                <EventCard {...item} />
-              ) : (
-                <FeaturedQuestCard {...item} />
-              )}
+          {featuredLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#9BEC00" />
             </View>
-          ))}
+          ) : featuredError ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{featuredError}</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={fetchFeaturedQuests}>
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            featuredQuests.map((item) => (
+              <View key={item.id} style={styles.featuredEventCard}>
+                <EventCard
+                  title={item.title}
+                  image={item.logo_url ? { uri: item.logo_url } : require('../../assets/images/feature1.jpg')}
+                  brandName={item.space?.company_name || item.space?.name || 'Brand Name'}
+                  isLive={item.status === 'LIVE'}
+                  description={item.description}
+                  progress={{ current: String(item.participants?.length || 0), total: String(item.participant_limit || 0) }}
+                  reward={String(item.max_reward_point || '')}
+                  endDate={item.end_date}
+                  endTime={item.schedule_time}
+                />
+              </View>
+            ))
+          )}
         </ScrollView>
 
         <View style={styles.cardRow}>
-          <View style={styles.card}>
-            <TouchableOpacity
-              style={styles.votercardContent}
-              onPress={() => setIsLiveVoterVisible(true)}
-            >
+          <View style={[styles.card, { opacity: 0.6 }]}>
+            <View style={styles.votercardContent} pointerEvents="none">
               <View style={styles.textContainer}>
                 <Text style={styles.cardTitle}>Live Voter</Text>
                 <View style={styles.rewardContainer}>
@@ -519,14 +617,14 @@ export default function Events() {
                   style={styles.illustration}
                 />
               </View>
-            </TouchableOpacity>
+              <View style={styles.comingSoonOverlay}>
+                <Text style={styles.comingSoonText}>Coming Soon</Text>
+              </View>
+            </View>
           </View>
 
-          <View style={styles.card}>
-            <TouchableOpacity
-              style={styles.dailycardContent}
-              onPress={() => setIsDailyEventsVisible(true)}
-            >
+          <View style={[styles.card, { opacity: 0.6 }]}>
+            <View style={styles.dailycardContent} pointerEvents="none">
               <View style={styles.rowBetween}>
                 <Text style={styles.cardTitle}>Daily Events</Text>
                 <View style={styles.progressBarWrapper}>
@@ -560,7 +658,10 @@ export default function Events() {
                   <Text style={styles.dailyCountdown}>18:34:22</Text>
                 </View>
               </View>
-            </TouchableOpacity>
+              <View style={styles.comingSoonOverlay}>
+                <Text style={styles.comingSoonText}>Coming Soon</Text>
+              </View>
+            </View>
           </View>
         </View>
 
@@ -568,7 +669,7 @@ export default function Events() {
           <Text style={styles.sectionTitle}>New</Text>
           <TouchableOpacity
             style={styles.exploreContainer}
-            onPress={() => router.push('/explorequest/[id]')}
+            onPress={() => router.push('/quests/explorequest/[id]')}
           >
             <Text style={[styles.sectionTitle, styles.exploreTitle]}>Explore</Text>
             <View style={styles.arrowBox}>
@@ -602,7 +703,7 @@ export default function Events() {
           <Text style={styles.sectionTitle}>Spaces you might like</Text>
           <TouchableOpacity
             style={styles.viewAllContainer}
-            onPress={() => router.push('/spaces')}
+            onPress={() => router.push('/quests/spaces')}
           >
             <Text style={styles.viewAllText}>View All</Text>
             <View style={styles.arrowBox}>
@@ -1125,69 +1226,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#242620',
   },
-  // headerBackground: {
-  //   position: 'absolute',
-  //   top: 0,
-  //   left: 0,
-  //   right: 0,
-  //   height: 100,
-  //   backgroundColor: '#242620',
-  //   zIndex: 99,
-  // },
-  // header: {
-  //   position: 'absolute',
-  //   top: 0,
-  //   left: 0,
-  //   right: 0,
-  //   flexDirection: 'row',
-  //   alignItems: 'center',
-  //   paddingHorizontal: 16,
-  //   paddingVertical: 12,
-  //   backgroundColor: '#242620',
-  //   zIndex: 100,
-  //   height: 100,
-  //   paddingTop: 40,
-  // },
-  // logo: {
-  //   width: 37,
-  //   height: 37,
-  //   marginRight: 10,
-  // },
-  // searchContainer: {
-  //   flex: 1,
-  //   flexDirection: 'row',
-  //   alignItems: 'center',
-  //   justifyContent: 'center',
-  //   backgroundColor: '#1A1A1A',
-  //   borderRadius: 12,
-  //   paddingHorizontal: 12,
-  //   marginRight: 12,
-  // },
-  // searchIcon: {
-  //   position: 'absolute',
-  //   left: 12,
-  // },
-  // searchInput: {
-  //   flex: 1,
-  //   height: 40,
-  //   color: '#FFF',
-  //   fontSize: 16,
-  //   paddingHorizontal: 25,
-  // },
-  // profileButton: {
-  //   width: 40,
-  //   height: 40,
-  //   borderRadius: 20,
-  //   backgroundColor: '#1A1A1A',
-  //   alignItems: 'center',
-  //   justifyContent: 'center',
-  //   overflow: 'hidden',
-  // },
-  // profileImage: {
-  //   width: '100%',
-  //   height: '100%',
-  //   borderRadius: 20,
-  // },
   content: {
     flex: 1,
     paddingHorizontal: 6,
@@ -1227,7 +1265,7 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   featuredEventCard: {
-    width: 250,
+    width: 400,
     marginRight: 16,
     overflow: 'visible',
   },
@@ -2273,6 +2311,25 @@ const styles = StyleSheet.create({
     color: '#242620',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  comingSoonOverlay: {
+    position: 'absolute',
+    top: '25%',
+    left: '0%',
+    width: '100%',
+    transform: [{ rotate: '-25deg' }],
+    backgroundColor: 'white',
+    borderRadius: 32,
+    paddingVertical: 8,
+    alignItems: 'center',
+    zIndex: 10,
+    elevation: 10,
+  },
+  comingSoonText: {
+    color: '#000',
+    fontWeight: 'bold',
+    fontSize: 22,
+    letterSpacing: 1,
   },
 });
 

@@ -1,19 +1,28 @@
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React from 'react';
-import { Image, StyleSheet, TextInput, TouchableOpacity, View, ViewStyle } from 'react-native';
+import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View, ViewStyle } from 'react-native';
 
 type HeaderProps = {
     onProfilePress?: () => void;
     onSearchPress?: () => void;
     searchPlaceholder?: string;
     containerStyle?: ViewStyle;
+    value?: string;
+    onChangeText?: (text: string) => void;
+    recommendations?: string[];
+    onRecommendationPress?: (recommendation: string) => void;
 };
 
 export const Header = ({
     onProfilePress,
     onSearchPress,
     searchPlaceholder = "Explore Quest",
-    containerStyle
+    containerStyle,
+    value = '',
+    onChangeText,
+    recommendations = [],
+    onRecommendationPress
 }: HeaderProps) => {
     return (
         <View style={[styles.fixedHeader, containerStyle]}>
@@ -29,12 +38,35 @@ export const Header = ({
                     placeholder={searchPlaceholder}
                     placeholderTextColor="#a2aba9"
                     textAlign="left"
+                    value={value}
+                    onChangeText={onChangeText}
                     onPressIn={onSearchPress}
-                //   editable={false}
                 />
                 <View style={styles.searchUnderline} />
+                {recommendations.length > 0 && (
+                    <View style={styles.dropdown}>
+                        {recommendations.map((rec, idx) => (
+                            <TouchableOpacity
+                                key={idx}
+                                style={styles.dropdownItem}
+                                onPress={() => onRecommendationPress && onRecommendationPress(rec)}
+                            >
+                                <Image source={require('../assets/images/search.png')} style={styles.dropdownIcon} />
+                                <Text style={styles.dropdownText}>{rec}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                )}
+                {recommendations.length === 0 && value && (
+                    <View style={styles.dropdown}>
+                        <View style={[styles.dropdownItem, { opacity: 0.7 }]}> 
+                            <Image source={require('../assets/images/search.png')} style={styles.dropdownIcon} />
+                            <Text style={[styles.dropdownText, { color: '#aaa' }]}>No quest found</Text>
+                        </View>
+                    </View>
+                )}
             </View>
-            <TouchableOpacity style={styles.profileButton} onPress={onProfilePress}>
+            <TouchableOpacity style={styles.profileButton} onPress={() => router.push('/quests/profile')}>
                 <Image
                     source={require('../assets/images/profile.png')}
                     style={styles.profileImage}
@@ -104,5 +136,36 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
         borderRadius: 32,
+    },
+    dropdown: {
+        position: 'absolute',
+        top: 44,
+        left: 0,
+        right: 0,
+        backgroundColor: '#242620',
+        borderRadius: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 5,
+        zIndex: 200,
+        paddingVertical: 4,
+    },
+    dropdownItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+    },
+    dropdownIcon: {
+        width: 18,
+        height: 18,
+        marginRight: 8,
+        tintColor: '#a2aba9',
+    },
+    dropdownText: {
+        color: '#fff',
+        fontSize: 14,
     },
 }); 

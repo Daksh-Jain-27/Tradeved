@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -20,7 +21,8 @@ import {
   ViewStyle
 } from 'react-native';
 import { Shadow } from 'react-native-shadow-2';
-import { Header } from '../../components/Header';
+import CustomTabBar from '../../../components/CustomTabBar';
+import { Header } from '../../../components/Header';
 
 type Styles = {
   container: ViewStyle;
@@ -202,6 +204,44 @@ export default function SpaceDetails() {
   const pan = React.useRef(new Animated.ValueXY()).current;
   const { id } = useLocalSearchParams();
   
+  // Search logic
+  const [allQuests, setAllQuests] = useState<{id: string, title: string}[]>([]);
+  const [search, setSearch] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  useEffect(() => {
+    const fetchAllQuests = async () => {
+      try {
+        const token = await AsyncStorage.getItem('authToken');
+        if (!token) return;
+        const response = await fetch('https://api.dev.tradeved.com/quest/all', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        setAllQuests(data.data.map((q: any) => ({ id: q.id, title: q.title })));
+      } catch {}
+    };
+    fetchAllQuests();
+  }, []);
+
+  const recommendations = useMemo(() => {
+    if (!search) return [];
+    return allQuests.filter(q => q.title.toLowerCase().includes(search.toLowerCase())).map(q => q.title).slice(0, 5);
+  }, [search, allQuests]);
+
+  const handleRecommendationPress = (rec: string) => {
+    setSearch(rec);
+    setShowDropdown(false);
+    const quest = allQuests.find(q => q.title === rec);
+    if (quest) {
+      router.push({ pathname: '/quests/quest-details/[id]', params: { id: quest.id } });
+    }
+  };
 
   // Create interpolated values for smooth animation
   const animatedTranslateY = pan.y.interpolate({
@@ -287,7 +327,12 @@ export default function SpaceDetails() {
     fetchSpaceDetails();
   }, [id]);
 
-  
+  useFocusEffect(
+    useCallback(() => {
+      setSearch('');
+      setShowDropdown(false);
+    }, [])
+  );
 
   const leaderboardData = [
     {
@@ -297,7 +342,7 @@ export default function SpaceDetails() {
       level: 24,
       points: '1200pts',
       achievements: 7,
-      image: require('../../assets/images/profile.png'),
+      image: require('../../../assets/images/profile.png'),
     },
     {
       id: 2,
@@ -306,7 +351,7 @@ export default function SpaceDetails() {
       level: 24,
       points: '1000pts',
       achievements: 7,
-      image: require('../../assets/images/profile.png'),
+      image: require('../../../assets/images/profile.png'),
     },
     {
       id: 3,
@@ -315,7 +360,7 @@ export default function SpaceDetails() {
       level: 24,
       points: '900pts',
       achievements: 7,
-      image: require('../../assets/images/profile.png'),
+      image: require('../../../assets/images/profile.png'),
     },
     {
       id: 4,
@@ -324,7 +369,7 @@ export default function SpaceDetails() {
       level: 24,
       points: '850pts',
       achievements: 7,
-      image: require('../../assets/images/profile.png'),
+      image: require('../../../assets/images/profile.png'),
     },
     {
       id: 5,
@@ -333,7 +378,7 @@ export default function SpaceDetails() {
       level: 24,
       points: '750pts',
       achievements: 7,
-      image: require('../../assets/images/profile.png'),
+      image: require('../../../assets/images/profile.png'),
     },
     {
       id: 6,
@@ -342,7 +387,7 @@ export default function SpaceDetails() {
       level: 24,
       points: '650pts',
       achievements: 7,
-      image: require('../../assets/images/profile.png'),
+      image: require('../../../assets/images/profile.png'),
     },
     {
       id: 7,
@@ -351,7 +396,7 @@ export default function SpaceDetails() {
       level: 18,
       points: '300pts',
       achievements: 2,
-      image: require('../../assets/images/profile.png'),
+      image: require('../../../assets/images/profile.png'),
       isUser: true,
     },
   ];
@@ -383,8 +428,15 @@ export default function SpaceDetails() {
       />
       <SafeAreaView style={styles.container}>
         <Header
-          onProfilePress={() => {/* Handle profile press */ }}
-          onSearchPress={() => {/* Handle search press */ }}
+          onProfilePress={() => {/* Handle profile press */}}
+          onSearchPress={() => setShowDropdown(true)}
+          value={search}
+          onChangeText={text => {
+            setSearch(text);
+            setShowDropdown(true);
+          }}
+          recommendations={showDropdown ? recommendations : []}
+          onRecommendationPress={handleRecommendationPress}
         />
 
         <View style={styles.subHeader}>
@@ -423,7 +475,7 @@ export default function SpaceDetails() {
               <View style={styles.spaceInfoContainer}>
                 <View style={styles.spaceInfo}>
                   <Image
-                    source={spaceDetails?.logo_url ? { uri: spaceDetails.logo_url } : require('../../assets/images/lazada.png')}
+                    source={spaceDetails?.logo_url ? { uri: spaceDetails.logo_url } : require('../../../assets/images/lazada.png')}
                     style={styles.spaceIcon}
                     resizeMode="contain"
                   />
@@ -437,7 +489,7 @@ export default function SpaceDetails() {
                         {spaceDetails?.quests?.slice(0, 3).map((quest, index) => (
                           <Image 
                             key={quest.id}
-                            source={quest.logo_url ? { uri: quest.logo_url } : require('../../assets/images/profile.png')} 
+                            source={quest.logo_url ? { uri: quest.logo_url } : require('../../../assets/images/profile.png')} 
                             style={[styles.avatar, index > 0 && { marginLeft: -8 }]} 
                           />
                         ))}
@@ -449,7 +501,7 @@ export default function SpaceDetails() {
                 </View>
                 <View style={styles.imageContainer}>
                   <Image
-                    source={spaceDetails?.banner ? { uri: spaceDetails.banner } : require('../../assets/images/lazadaquest.png')}
+                    source={spaceDetails?.banner ? { uri: spaceDetails.banner } : require('../../../assets/images/lazadaquest.png')}
                     style={styles.backgroundImage}
                     resizeMode="cover"
                   />
@@ -469,84 +521,84 @@ export default function SpaceDetails() {
                     <TouchableOpacity 
                       key={quest.id} 
                       style={[styles.questCard, quest.is_lock && styles.questCardLocked]}
-                      onPress={() => router.push(`/quest-details/${quest.id}`)}
+                      onPress={() => router.push(`/quests/quest-details/${quest.id}`)}
                     >
-                      <View style={styles.questContent}>
+                    <View style={styles.questContent}>
                         {quest.is_lock && <View style={styles.cardOverlay} />}
-                        <View style={styles.questHeader}>
+                      <View style={styles.questHeader}>
                           <Text style={styles.questName}>{quest.title}</Text>
                           {/* <Ionicons name="time-outline" size={12} color="#9BEC00" style={{ marginTop: -4, marginRight: -16 }} />
                           <Text style={styles.progressBadgeText}>{quest.participants.length}/{quest.participant_limit}</Text> */}
-                        </View>
-                        <View style={styles.progressRow}>
-                          <View style={styles.avatarsContainer}>
+                      </View>
+                      <View style={styles.progressRow}>
+                        <View style={styles.avatarsContainer}>
                             {quest.participants.slice(0, 4).map((participant, index) => (
                               <Image 
                                 key={index}
-                                source={require('../../assets/images/profile.png')} 
+                                source={require('../../../assets/images/profile.png')} 
                                 style={[styles.avatar, index > 0 && { marginLeft: -8 }]} 
                               />
                             ))}
-                          </View>
+                        </View>
                           <Text style={styles.progressText}>{quest.participants.length}</Text>
                           <Text style={styles.totalText}>/{quest.participant_limit}</Text>
-                        </View>
+                      </View>
                         <Text style={styles.questDescription} numberOfLines={3}>{quest.description}</Text>
-                        <View style={styles.questFooter}>
-                          <View style={styles.footerColumn}>
-                            <View style={styles.labelRow}>
-                              <Image
-                                source={require('../../assets/images/hexagon.png')}
-                                style={styles.clockIcon}
-                                resizeMode="contain"
-                              />
-                              <Text style={styles.footerLabel}>Reward</Text>
-                            </View>
-                            <Text style={styles.footerValue}>{quest.max_reward_point} pts</Text>
+                      <View style={styles.questFooter}>
+                        <View style={styles.footerColumn}>
+                          <View style={styles.labelRow}>
+                            <Image
+                              source={require('../../../assets/images/hexagon.png')}
+                              style={styles.clockIcon}
+                              resizeMode="contain"
+                            />
+                            <Text style={styles.footerLabel}>Reward</Text>
                           </View>
+                            <Text style={styles.footerValue}>{quest.max_reward_point} pts</Text>
+                        </View>
                           {/* <View style={styles.verticalDivider} />
-                          <View style={styles.footerColumn}>
-                            <View style={styles.labelRow}>
-                              <Image
-                                source={require('../../assets/images/uis_calender.png')}
-                                style={styles.clockIcon}
-                                resizeMode="contain"
-                              />
-                              <Text style={styles.footerLabel}>End Date</Text>
-                            </View>
+                        <View style={styles.footerColumn}>
+                          <View style={styles.labelRow}>
+                            <Image
+                              source={require('../../../assets/images/uis_calender.png')}
+                              style={styles.clockIcon}
+                              resizeMode="contain"
+                            />
+                            <Text style={styles.footerLabel}>End Date</Text>
+                          </View>
                             <Text style={styles.footerValue}>{quest.end_date || 'No end date'}</Text>
                           </View> */}
                         </View>
                       </View>
                       <View style={[styles.questImageContainer, !quest.is_lock && styles.fullHeightImage]}>
-                        <Image
-                          source={quest.logo_url ? { uri: quest.logo_url } : require('../../assets/images/lazadaquest1.png')}
+                      <Image
+                          source={quest.logo_url ? { uri: quest.logo_url } : require('../../../assets/images/lazadaquest1.png')}
                           style={[styles.questImage, !quest.is_lock && styles.fullHeightImage]}
-                          resizeMode="cover"
-                        />
+                        resizeMode="cover"
+                      />
                         {quest.is_lock && (
                           <View style={styles.lockOverlay}>
-                            <Image
-                              source={require('../../assets/images/lock.png')}
+                          <Image
+                            source={require('../../../assets/images/lock.png')}
                               style={styles.lockIcon}
-                              resizeMode="contain"
-                            />
-                          </View>
-                        )}
-                        <View style={styles.shadowWrapper}>
-                          <Shadow
-                            distance={16}
-                            startColor={'#9BEC0040'}
-                            endColor={'#9BEC0000'}
-                            offset={[0, 0]}
-                          >
-                            <View style={styles.liveContainer}>
-                              <View style={styles.liveDot} />
-                              <Text style={styles.liveText}>{new Date(quest.created_at).toLocaleDateString()}</Text>
-                            </View>
-                          </Shadow>
+                            resizeMode="contain"
+                          />
                         </View>
+                      )}
+                      <View style={styles.shadowWrapper}>
+                        <Shadow
+                          distance={16}
+                          startColor={'#9BEC0040'}
+                          endColor={'#9BEC0000'}
+                          offset={[0, 0]}
+                        >
+                          <View style={styles.liveContainer}>
+                            <View style={styles.liveDot} />
+                              <Text style={styles.liveText}>{new Date(quest.created_at).toLocaleDateString()}</Text>
+                          </View>
+                        </Shadow>
                       </View>
+                    </View>
                     </TouchableOpacity>
                   ))
                 ) : (
@@ -569,10 +621,10 @@ export default function SpaceDetails() {
                         <Image
                           source={
                             item.rank === 1
-                              ? require('../../assets/images/rank1.png')
+                              ? require('../../../assets/images/rank1.png')
                               : item.rank === 2
-                                ? require('../../assets/images/rank2.png')
-                                : require('../../assets/images/rank3.png')
+                                ? require('../../../assets/images/rank2.png')
+                                : require('../../../assets/images/rank3.png')
                           }
                           style={styles.rankBadge}
                         />
@@ -593,14 +645,14 @@ export default function SpaceDetails() {
                     <View style={styles.statsContainer}>
                       <View style={styles.achievementsContainer}>
                         <Image
-                          source={require('../../assets/images/fire.png')}
+                          source={require('../../../assets/images/fire.png')}
                           style={styles.achievementIcon}
                         />
                         <Text style={styles.achievementCount}>{item.achievements}</Text>
                       </View>
                       <View style={styles.leaderPointsContainer}>
                         <Image
-                          source={require('../../assets/images/hexagon.png')}
+                          source={require('../../../assets/images/hexagon.png')}
                           style={styles.pointsIcon}
                         />
                         <Text style={styles.points}>{item.points}</Text>
@@ -633,7 +685,7 @@ export default function SpaceDetails() {
               <View style={styles.fixedStatsContainer}>
                 <View style={styles.fixedAchievementContainer}>
                   <Image
-                    source={require('../../assets/images/fire.png')}
+                    source={require('../../../assets/images/fire.png')}
                     style={styles.fixedAchievementIcon}
                   />
                   <Text style={styles.fixedAchievementCount}>
@@ -642,7 +694,7 @@ export default function SpaceDetails() {
                 </View>
                 <View style={styles.fixedPointsContainer}>
                   <Image
-                    source={require('../../assets/images/hexagon.png')}
+                    source={require('../../../assets/images/hexagon.png')}
                     style={styles.fixedPointsIcon}
                   />
                   <Text style={styles.fixedPoints}>
@@ -718,6 +770,7 @@ export default function SpaceDetails() {
             </Pressable>
           </View>
         )}
+        {activeTab !== 'leaderboard' && <CustomTabBar />}
       </SafeAreaView>
     </>
   );
@@ -910,15 +963,17 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   backgroundImage: {
-    width: '220%',
-    height: '220%',
-    position: 'absolute',
-    top: '-70%',
-    left: '55%',
-    transform: [
-      { scale: 1.2 },
-      { rotate: '60deg' }
-    ],
+    // width: '220%',
+    // height: '220%',
+    // position: 'absolute',
+    // top: '-70%',
+    // left: '55%',
+    // transform: [
+    //   { scale: 1.2 },
+    //   { rotate: '60deg' }
+    // ],
+    width: '100%',
+    height: '100%',
   },
   imageOverlay: {
     position: 'absolute',
@@ -1092,7 +1147,7 @@ const styles = StyleSheet.create({
   shadowWrapper: {
     position: 'absolute',
     bottom: 10,
-    left: 17,
+    left: 8,
     zIndex: 10,
   },
   liveContainer: {

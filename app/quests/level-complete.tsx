@@ -1,19 +1,143 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Stack, useRouter } from 'expo-router';
-import React from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   SafeAreaView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
-import { Header } from '../components/Header';
+import { Header } from '../../components/Header';
+
+// Type for the API response
+type QuestDetails = {
+  id: string;
+  title: string;
+  description: string;
+  content: string;
+  content_type: string;
+  logo_url: string;
+  max_reward_point: number;
+  participant_limit: number;
+  participants: any[];
+  quest_time: number;
+  template: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  is_lock: boolean;
+  end_date: string;
+};
 
 export default function LevelComplete() {
   const router = useRouter();
+  const { id } = useLocalSearchParams();
+  const [questDetails, setQuestDetails] = React.useState<QuestDetails | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [allQuests, setAllQuests] = useState<{id: string, title: string}[]>([]);
+  const [search, setSearch] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const fetchQuestDetails = async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) {
+        setError('Authentication required');
+        return;
+      }
+
+      const response = await fetch(`https://api.dev.tradeved.com/quest/get/${id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch quest details');
+      }
+
+      const data = await response.json();
+      setQuestDetails(data.data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Error fetching quest details:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const fetchAllQuests = async () => {
+      try {
+        const token = await AsyncStorage.getItem('authToken');
+        if (!token) return;
+        const response = await fetch('https://api.dev.tradeved.com/quest/all', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        setAllQuests(data.data.map((q: any) => ({ id: q.id, title: q.title })));
+      } catch {}
+    };
+    fetchAllQuests();
+  }, []);
+
+  const recommendations = useMemo(() => {
+    if (!search) return [];
+    return allQuests.filter(q => q.title.toLowerCase().includes(search.toLowerCase())).map(q => q.title).slice(0, 5);
+  }, [search, allQuests]);
+
+  const handleRecommendationPress = (rec: string) => {
+    setSearch(rec);
+    setShowDropdown(false);
+    const quest = allQuests.find(q => q.title === rec);
+    if (quest) {
+      router.push({ pathname: '/quests/quest-details/[id]', params: { id: quest.id } });
+    }
+  };
+
+  React.useEffect(() => {
+    fetchQuestDetails();
+  }, [id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      setSearch('');
+      setShowDropdown(false);
+    }, [])
+  );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color="#9BEC00" />
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={[styles.container, styles.centerContent]}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchQuestDetails}>
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <>
@@ -26,7 +150,14 @@ export default function LevelComplete() {
         {/* Fixed Main Header */}
         <Header
           onProfilePress={() => {/* Handle profile press */ }}
-          onSearchPress={() => {/* Handle search press */ }}
+          onSearchPress={() => setShowDropdown(true)}
+          value={search}
+          onChangeText={(text: string) => {
+            setSearch(text);
+            setShowDropdown(true);
+          }}
+          recommendations={showDropdown ? recommendations : []}
+          onRecommendationPress={handleRecommendationPress}
         />
 
 
@@ -46,52 +177,52 @@ export default function LevelComplete() {
           <View style={styles.questHeaderWrapper}>
             <View style={styles.questHeaderContent}>
               <View style={styles.questTitleRow}>
-                <Text style={styles.questTitle}>Example Quest</Text>
+                <Text style={styles.questTitle}>{questDetails?.title}</Text>
                 <View style={styles.questTimeContainer}>
-                  <Text style={styles.questTime}>10min</Text>
-                  <Text style={styles.questType}>QnA</Text>
+                  {/* <Text style={styles.questTime}>{questDetails?.quest_time}min</Text> */}
+                  <Text style={styles.questType}>{questDetails?.template}</Text>
                 </View>
               </View>
               <View style={styles.contentSection}>
                 <View style={styles.questPoints}>
                   <View style={styles.pointsAvatars}>
-                    <Image source={require('../assets/images/profile.png')} style={[styles.pointAvatar, { zIndex: 1 }]} />
-                    <Image source={require('../assets/images/profile.png')} style={[styles.pointAvatar, { marginLeft: -8, zIndex: 2 }]} />
-                    <Image source={require('../assets/images/profile.png')} style={[styles.pointAvatar, { marginLeft: -8, zIndex: 3 }]} />
-                    <Image source={require('../assets/images/profile.png')} style={[styles.pointAvatar, { marginLeft: -8, zIndex: 4 }]} />
+                    <Image source={require('../../assets/images/profile.png')} style={[styles.pointAvatar, { zIndex: 1 }]} />
+                    <Image source={require('../../assets/images/profile.png')} style={[styles.pointAvatar, { marginLeft: -8, zIndex: 2 }]} />
+                    <Image source={require('../../assets/images/profile.png')} style={[styles.pointAvatar, { marginLeft: -8, zIndex: 3 }]} />
+                    <Image source={require('../../assets/images/profile.png')} style={[styles.pointAvatar, { marginLeft: -8, zIndex: 4 }]} />
                   </View>
-                  <Text style={styles.pointsText}>240</Text>
-                  <Text style={styles.totalPointsText}>/4k</Text>
+                  <Text style={styles.pointsText}>{questDetails?.participants.length}</Text>
+                  <Text style={styles.totalPointsText}>/{questDetails?.participant_limit}</Text>
                 </View>
                 <View style={styles.metricsRow}>
                   <View style={styles.questRewards}>
                     <View style={styles.rewardItem}>
                       <Image
-                        source={require('../assets/images/hexagon.png')}
+                        source={require('../../assets/images/hexagon.png')}
                         style={styles.statIcon}
                         resizeMode="contain"
                       />
                       <Text style={styles.rewardText}>Reward</Text>
                     </View>
-                    <Text style={styles.rewardPoints}>100 pts</Text>
+                    <Text style={styles.rewardPoints}>{questDetails?.max_reward_point} pts</Text>
                   </View>
-                  <View style={styles.verticalDivider} />
+                  {/* <View style={styles.verticalDivider} />
                   <View style={styles.questTimeInfo}>
                     <View style={styles.timeItem}>
                       <Image
-                        source={require('../assets/images/champion.png')}
+                        source={require('../../assets/images/champion.png')}
                         style={styles.statIcon}
                         resizeMode="contain"
                       />
                       <Text style={styles.timeText}>Record time</Text>
                     </View>
-                    <Text style={styles.timeDate}>21 Oct, 24</Text>
-                  </View>
+                    <Text style={styles.timeDate}>{new Date(questDetails?.created_at || '').toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: '2-digit' })}</Text>
+                  </View> */}
                 </View>
               </View>
             </View>
             <Image
-              source={require('../assets/images/quest-header.jpg')}
+              source={{ uri: questDetails?.logo_url || require('../../assets/images/quest-header.jpg') }}
               style={styles.questHeaderBg}
               resizeMode="cover"
             />
@@ -104,12 +235,12 @@ export default function LevelComplete() {
           <View style={styles.levelCompleteContainer}>
             <View style={[styles.confettiRow, { justifyContent: 'space-between' }]}>
               <Image
-                source={require('../assets/images/confetti.png')}
+                source={require('../../assets/images/confetti.png')}
                 style={styles.confettiImage}
                 resizeMode="contain"
               />
               <Image
-                source={require('../assets/images/confetti.png')}
+                source={require('../../assets/images/confetti.png')}
                 style={styles.confettiImage}
                 resizeMode="contain"
               />
@@ -120,39 +251,39 @@ export default function LevelComplete() {
               <View style={styles.statItem}>
                 <View style={styles.statIconRow}>
                   <Image
-                    source={require('../assets/images/hexagon.png')}
+                    source={require('../../assets/images/hexagon.png')}
                     style={styles.statIcon2}
                     resizeMode="contain"
                   />
                   <Text style={styles.statLabel}>Reward</Text>
                 </View>
-                <Text style={styles.statValue}>100 pt</Text>
+                <Text style={styles.statValue}>{questDetails?.max_reward_point} pt</Text>
               </View>
 
-              <View style={styles.statItem}>
+              {/* <View style={styles.statItem}>
                 <View style={styles.statIconRow}>
                   <Image
-                    source={require('../assets/images/champion.png')}
+                    source={require('../../assets/images/champion.png')}
                     style={styles.statIcon2}
                     resizeMode="contain"
                   />
                   <Text style={styles.statLabel}>Record time</Text>
                 </View>
-                <Text style={styles.statValue}>7min 32sec</Text>
-              </View>
+                <Text style={styles.statValue}>{questDetails?.quest_time}min</Text>
+              </View> */}
             </View>
 
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={styles.reviewButton}
-                onPress={() => router.push('/quest-review')}
+                onPress={() => router.push({ pathname: '/quests/quest-review', params: { id: id as string }})}
               >
                 <Text style={styles.reviewButtonText}>Review</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.continueButton}
-                onPress={() => router.push('/achievement')}
+                onPress={() => router.push(`/quests/explorequest/${id}`)}
               >
                 <Text style={styles.continueButtonText}>Continue</Text>
               </TouchableOpacity>
@@ -254,6 +385,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   questTitle: {
+    maxWidth: '75%',
     color: '#FFF',
     fontSize: 16,
     fontWeight: 'bold',
@@ -430,7 +562,7 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '700',
-    marginLeft: -16,
+    marginLeft: 0,
     // textAlign: 'left',
   },
   buttonContainer: {
@@ -461,5 +593,26 @@ const styles = StyleSheet.create({
     color: '#0f1209',
     fontSize: 14,
     fontWeight: '700',
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#ff4d4d',
+    fontSize: 16,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#9BEC00',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#242620',
+    fontSize: 16,
+    fontWeight: '600',
   },
 }); 

@@ -1,18 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Image,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
-import { Header } from '../../components/Header';
+import { Header } from '../../../components/Header';
 
 // Type for the API response
 type QuestDetails = {
@@ -31,6 +32,7 @@ type QuestDetails = {
     questions: Array<{
       id: string;
       questionText: string;
+      answerType?: string;
       options: Array<{
         id: string;
         content: string;
@@ -120,7 +122,7 @@ const ContentRenderer = ({ contentType, content, logoUrl }: { contentType: strin
 
     return (
       <View style={styles.textContentContainer}>
-        <ScrollView style={styles.textContentScroll}>
+        <ScrollView style={styles.textContentScroll} nestedScrollEnabled={true}>
           <Text style={styles.textContent}>{plainText}</Text>
         </ScrollView>
       </View>
@@ -176,15 +178,41 @@ const ContentRenderer = ({ contentType, content, logoUrl }: { contentType: strin
 export default function QuestDetails() {
   const router = useRouter();
   const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
-  const [selectedOption, setSelectedOption] = React.useState<string | null>(null);
-  const [showFeedback, setShowFeedback] = React.useState(false);
-  const [hasClickedContinue, setHasClickedContinue] = React.useState(false);
-  const [isCorrect, setIsCorrect] = React.useState<boolean | null>(null);
-  const [feedbackMessage, setFeedbackMessage] = React.useState<string>('');
+  const [selectedOptions, setSelectedOptions] = React.useState<string[]>([]);
   const { id } = useLocalSearchParams();
   const [questDetails, setQuestDetails] = React.useState<QuestDetails | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+
+  const isMultiCorrect = useMemo(() => {
+    const currentQuestion = questDetails?.questQNA.questions[currentQuestionIndex];
+    if (!currentQuestion) return false;
+    const correctOptionsCount = currentQuestion.options.filter(
+      opt => opt.description && opt.description.trim() !== ''
+    ).length;
+    return correctOptionsCount > 1;
+  }, [questDetails, currentQuestionIndex]);
+
+  const totalQuestions = questDetails?.questQNA.questions.length ?? 0;
+  const isLastQuestion = totalQuestions > 0 && currentQuestionIndex === totalQuestions - 1;
+  const isFirstQuestion = currentQuestionIndex === 0;
+
+  const noQuestions = (questDetails?.questQNA.questions.length ?? 0) === 0;
+
+  const currentOptions = questDetails?.questQNA.questions[currentQuestionIndex]?.options;
+  const optionPairs = useMemo(() => {
+    if (!currentOptions) return [];
+    const pairs = [];
+    for (let i = 0; i < currentOptions.length; i += 2) {
+      pairs.push(currentOptions.slice(i, i + 2));
+    }
+    return pairs;
+  }, [currentOptions]);
+
+  // Search logic
+  const [allQuests, setAllQuests] = useState<{id: string, title: string}[]>([]);
+  const [search, setSearch] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const fetchQuestDetails = async () => {
     try {
@@ -218,29 +246,59 @@ export default function QuestDetails() {
     }
   };
 
+  useEffect(() => {
+    const fetchAllQuests = async () => {
+      try {
+        const token = await AsyncStorage.getItem('authToken');
+        if (!token) return;
+        const response = await fetch('https://api.dev.tradeved.com/quest/all', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        setAllQuests(data.data.map((q: any) => ({ id: q.id, title: q.title })));
+      } catch {}
+    };
+    fetchAllQuests();
+  }, []);
+
+  const recommendations = useMemo(() => {
+    if (!search) return [];
+    return allQuests.filter(q => q.title.toLowerCase().includes(search.toLowerCase())).map(q => q.title).slice(0, 5);
+  }, [search, allQuests]);
+
+  const handleRecommendationPress = (rec: string) => {
+    setSearch(rec);
+    setShowDropdown(false);
+    const quest = allQuests.find(q => q.title === rec);
+    if (quest) {
+      router.push({ pathname: '/quests/quest-details/[id]', params: { id: quest.id } });
+    }
+  };
+
   React.useEffect(() => {
     fetchQuestDetails();
   }, [id]);
 
   const currentQuestion = questions[currentQuestionIndex];
-  const isLastQuestion = currentQuestionIndex === questions.length - 1;
-  const isFirstQuestion = currentQuestionIndex === 0;
 
   const handlePrevious = () => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(prev => prev - 1);
-      setSelectedOption(null);
-      setShowFeedback(false);
-      setHasClickedContinue(false);
+      setSelectedOptions([]);
     }
   };
 
   const handleSkip = () => {
-    if (!isLastQuestion) {
+    if (isLastQuestion) {
+      router.push({ pathname: '/quests/level-complete', params: { id: id as string } });
+    } else if (questDetails?.questQNA.questions && currentQuestionIndex < questDetails.questQNA.questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
-      setSelectedOption(null);
-      setShowFeedback(false);
-      setHasClickedContinue(false);
+      setSelectedOptions([]);
     }
   };
 
@@ -257,43 +315,50 @@ export default function QuestDetails() {
   };
 
   const handleSaveAndContinue = () => {
-    if (selectedOption) {
-      if (showFeedback) {
-        // After showing feedback, move to next question or complete
+    if (selectedOptions.length > 0) {
         if (isLastQuestion) {
-          router.push('/level-complete');
+          router.push({ pathname: '/quests/level-complete', params: { id: id as string } });
         } else {
           setCurrentQuestionIndex(prev => prev + 1);
-          setSelectedOption(null);
-          setShowFeedback(false);
-          setHasClickedContinue(false);
-          setIsCorrect(null);
-          setFeedbackMessage('');
-        }
-      } else {
-        // First click - check answer and show feedback
-        const currentQuestion = questDetails?.questQNA.questions[currentQuestionIndex];
-        const selectedOptionData = currentQuestion?.options.find(opt => opt.id === selectedOption);
-        
-        if (selectedOptionData && currentQuestion) {
-          const hasDescription = Boolean(selectedOptionData.description && selectedOptionData.description.trim() !== '');
-          setIsCorrect(hasDescription);
-          
-          if (hasDescription) {
-            // If answer is correct, show its explanation
-            setFeedbackMessage(removeHtmlTags(selectedOptionData.description));
-          } else {
-            // If answer is incorrect, find and show the correct answer's explanation
-            const correctOption = currentQuestion.options.find(opt => opt.description && opt.description.trim() !== '');
-            setFeedbackMessage(correctOption?.description ? removeHtmlTags(correctOption.description) : 'Incorrect answer. Please try again.');
-          }
-        }
-        
-        setShowFeedback(true);
-        setHasClickedContinue(true);
+        setSelectedOptions([]);
       }
     }
   };
+
+  const handleOptionSelect = async (optionId: string) => {
+    const newSelectedOptions = (() => {
+        if (isMultiCorrect) {
+            const prev = selectedOptions;
+            if (prev.includes(optionId)) {
+                return prev.filter(id => id !== optionId);
+            }
+            return [...prev, optionId];
+        }
+        return [optionId];
+    })();
+
+    setSelectedOptions(newSelectedOptions);
+    
+    // Store the selected answer(s)
+    try {
+      const currentAnswers = await AsyncStorage.getItem(`quest_answers_${id}`);
+      const answers = currentAnswers ? JSON.parse(currentAnswers) : {};
+      const questionId = questDetails?.questQNA.questions[currentQuestionIndex]?.id;
+      if (questionId) {
+        answers[questionId] = newSelectedOptions;
+        await AsyncStorage.setItem(`quest_answers_${id}`, JSON.stringify(answers));
+      }
+    } catch (error) {
+      console.error('Error saving answer:', error);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      setSearch('');
+      setShowDropdown(false);
+    }, [])
+  );
 
   if (loading) {
     return (
@@ -322,9 +387,16 @@ export default function QuestDetails() {
         }}
       />
       <SafeAreaView style={styles.container}>
-        <Header 
+        <Header
           onProfilePress={() => {/* Handle profile press */}}
-          onSearchPress={() => {/* Handle search press */}}
+          onSearchPress={() => setShowDropdown(true)}
+          value={search}
+          onChangeText={text => {
+            setSearch(text);
+            setShowDropdown(true);
+          }}
+          recommendations={showDropdown ? recommendations : []}
+          onRecommendationPress={handleRecommendationPress}
         />
         <ScrollView 
           style={styles.scrollContent}
@@ -346,17 +418,17 @@ export default function QuestDetails() {
               <View style={styles.questTitleRow}>
                 <Text style={styles.questTitle}>{questDetails?.title}</Text>
                 <View style={styles.questTimeContainer}>
-                  <Text style={styles.questTime}>{questDetails?.quest_time} min</Text>
+                  {/* <Text style={styles.questTime}>{questDetails?.quest_time} min</Text> */}
                   <Text style={styles.questType}>{questDetails?.template}</Text>
                 </View>
               </View>
               <View style={styles.contentSection1}>
                 <View style={styles.questPoints}>
                   <View style={styles.pointsAvatars}>
-                    <Image source={require('../../assets/images/profile.png')} style={[styles.pointAvatar, { zIndex: 1 }]} />
-                    <Image source={require('../../assets/images/profile.png')} style={[styles.pointAvatar, { marginLeft: -8, zIndex: 2 }]} />
-                    <Image source={require('../../assets/images/profile.png')} style={[styles.pointAvatar, { marginLeft: -8, zIndex: 3 }]} />
-                    <Image source={require('../../assets/images/profile.png')} style={[styles.pointAvatar, { marginLeft: -8, zIndex: 4 }]} />
+                    <Image source={require('../../../assets/images/profile.png')} style={[styles.pointAvatar, { zIndex: 1 }]} />
+                    <Image source={require('../../../assets/images/profile.png')} style={[styles.pointAvatar, { marginLeft: -8, zIndex: 2 }]} />
+                    <Image source={require('../../../assets/images/profile.png')} style={[styles.pointAvatar, { marginLeft: -8, zIndex: 3 }]} />
+                    <Image source={require('../../../assets/images/profile.png')} style={[styles.pointAvatar, { marginLeft: -8, zIndex: 4 }]} />
                   </View>
                   <Text style={styles.pointsText}>{questDetails?.participants.length}</Text>
                   <Text style={styles.totalPointsText}>/{questDetails?.participant_limit}</Text>
@@ -365,7 +437,7 @@ export default function QuestDetails() {
                   <View style={styles.questRewards}>
                     <View style={styles.rewardItem}>
                       <Image
-                        source={require('../../assets/images/hexagon.png')}
+                        source={require('../../../assets/images/hexagon.png')}
                         style={styles.statIcon}
                         resizeMode="contain"
                       />
@@ -377,7 +449,7 @@ export default function QuestDetails() {
                   <View style={styles.questTimeInfo}>
                     <View style={styles.timeItem}>
                       <Image
-                        source={require('../../assets/images/champion.png')}
+                        source={require('../../../assets/images/champion.png')}
                         style={styles.statIcon}
                         resizeMode="contain"
                       />
@@ -389,25 +461,25 @@ export default function QuestDetails() {
               </View>
             </View>
             <Image 
-              source={require('../../assets/images/quest-header.jpg')} 
+              source={{ uri: questDetails?.logo_url || require('../../../assets/images/quest-header.jpg') }}
               style={styles.questHeaderBg}
               resizeMode="cover"
             />
             <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${((currentQuestionIndex + (showFeedback ? 1 : 0)) / (questDetails?.questQNA?.total_question || 1)) * 100}%` }]} />
+              <View style={[styles.progressFill, { width: `${((currentQuestionIndex + 1) / (questDetails?.questQNA?.total_question || 1)) * 100}%` }]} />
             </View>
           </View>
 
           {/* Quiz Prompt Section */}
           <View style={styles.quizPromptSection}>
             <Text style={styles.quizText}>Take the quiz and claim your reward!</Text>
-            <View style={styles.timeRemaining}>
+            {/* <View style={styles.timeRemaining}>
               <Ionicons name="time-outline" size={16} color="#FFF" />
               <Text style={styles.timeRemainingText}>9:58</Text>
-            </View>
+            </View> */}
           </View>
 
-          <ScrollView style={styles.content}>
+          <View style={styles.content}>
             {/* Content Section */}
             <ContentRenderer 
               contentType={questDetails?.content_type || 'text'} 
@@ -434,92 +506,63 @@ export default function QuestDetails() {
             {/* Options Section */}
             <View style={styles.optionsContainer}>
               <View style={styles.optionsHeader}>
-                <View>
+                <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Text style={styles.optionsTitle}>Select the right answer</Text>
-                  <Text style={styles.optionsSubtitle}>{currentQuestionIndex + 1}/{questDetails?.questQNA.total_question} {questDetails?.questQNA.questions[currentQuestionIndex].questionText}</Text>
+                        {/* Single/Multi Correct Indicator */}
+                        {questDetails?.questQNA.questions[currentQuestionIndex]?.answerType && (
+                        <View style={{
+                            backgroundColor: '#9BEC00',
+                            borderRadius: 6,
+                            paddingHorizontal: 10,
+                            paddingVertical: 4,
+                        }}>
+                            <Text style={{
+                            color: '#000',
+                            fontWeight: 'bold',
+                            fontSize: 12,
+                            }}>
+                            {questDetails.questQNA.questions[currentQuestionIndex].answerType}
+                            </Text>
                 </View>
-                {/* <View style={styles.searchBadge}>
-                  <Image
-                    source={require('../../assets/images/search.png')}
-                    style={[styles.badgeIcon, { transform: [{ scaleX: -1 }] }]}
-                    resizeMode="contain"
-                  />
-                  <View style={styles.badgeCount}>
-                    <Text style={styles.badgeNumber}>{currentQuestionIndex + 1}</Text>
+                        )}
                   </View>
-                </View> */}
+                    <Text style={styles.optionsSubtitle}>
+                        {currentQuestionIndex + 1}/{questDetails?.questQNA.total_question} {questDetails?.questQNA.questions[currentQuestionIndex].questionText}
+                    </Text>
+                </View>
               </View>
               
               <View style={styles.optionsWithImageContainer}>
                 <View style={styles.optionsGrid}>
-                  <View style={styles.optionsColumn}>
-                    {questDetails?.questQNA.questions[currentQuestionIndex].options
-                      .filter((_, index) => index % 2 === 0)
-                      .map((option: { id: string; content: string; description: string; isCorrect: boolean }) => (
+                  {optionPairs.map((pair, index) => (
+                    <View key={index} style={styles.optionRow}>
+                      {pair.map((option: { id: string; content: string; description: string; isCorrect: boolean }) => (
                         <TouchableOpacity
                           key={option.id}
                           style={[
                             styles.optionButton,
-                            selectedOption === option.id && styles.selectedOption
+                            selectedOptions.includes(option.id) && styles.selectedOption,
                           ]}
-                          onPress={() => setSelectedOption(option.id)}
+                          onPress={() => handleOptionSelect(option.id)}
                         >
                           <Text style={[
                             styles.optionText,
-                            selectedOption === option.id && styles.selectedOptionText
+                            selectedOptions.includes(option.id) && styles.selectedOptionText,
                           ]}>{option.content}</Text>
                         </TouchableOpacity>
                     ))}
+                      {pair.length === 1 && <View style={{ flex: 1 }} />}
                   </View>
-                  <View style={styles.optionsColumn}>
-                    {questDetails?.questQNA.questions[currentQuestionIndex].options
-                      .filter((_, index) => index % 2 === 1)
-                      .map((option: { id: string; content: string; description: string; isCorrect: boolean }) => (
-                        <TouchableOpacity
-                          key={option.id}
-                          style={[
-                            styles.optionButton,
-                            selectedOption === option.id && styles.selectedOption
-                          ]}
-                          onPress={() => setSelectedOption(option.id)}
-                        >
-                          <Text style={[
-                            styles.optionText,
-                            selectedOption === option.id && styles.selectedOptionText
-                          ]}>{option.content}</Text>
-                        </TouchableOpacity>
                     ))}
                   </View>
                 </View>
               </View>
             </View>
-          </ScrollView>
         </ScrollView>
 
         {/* Bottom Section */}
         <View style={styles.bottomSection}>
-          {/* Feedback Container */}
-          {showFeedback && (
-            <View style={styles.feedbackContainer}>
-              <View style={styles.feedbackContent}>
-                <View style={styles.feedbackRow}>
-                  <Ionicons 
-                    name={isCorrect ? "checkmark-circle" : "close-circle"} 
-                    size={20} 
-                    color={isCorrect ? "#9BEC00" : "#ff4d4d"} 
-                  />
-                  <Text style={[styles.feedbackTitle, { color: isCorrect ? "#9BEC00" : "#ff4d4d" }]}>
-                    {isCorrect ? "Awesome" : "Incorrect"}
-                  </Text>
-                  <Text style={styles.feedbackText}>{feedbackMessage}</Text>
-                </View>
-                <TouchableOpacity>
-                  <Text style={styles.readMoreText}>Read Full Explanation {'>'}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-
           {/* Bottom Navigation */}
           <View style={styles.bottomNav}>
             <TouchableOpacity 
@@ -530,21 +573,21 @@ export default function QuestDetails() {
               <Text style={[styles.prevButtonText, isFirstQuestion && styles.buttonTextDisabled]}>Previous</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.nextButton, selectedOption ? styles.nextButtonActive : {}]}
-              disabled={!selectedOption}
+              style={[styles.nextButton, selectedOptions.length > 0 ? styles.nextButtonActive : {}]}
+              disabled={selectedOptions.length === 0}
               onPress={handleSaveAndContinue}
             >
-              <Text style={[styles.nextButtonText, selectedOption ? styles.nextButtonTextActive : {}]}>
-                {isLastQuestion && showFeedback ? 'Complete Quest' : 'Save and Continue'}
+              <Text style={[styles.nextButtonText, selectedOptions.length > 0 ? styles.nextButtonTextActive : {}]}>
+                {isLastQuestion ? 'Complete Quest' : 'Save and Continue'}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.skipButton, isLastQuestion && styles.buttonDisabled]}
+              style={[styles.skipButton, noQuestions && styles.buttonDisabled]}
               onPress={handleSkip}
-              disabled={isLastQuestion}
+              disabled={noQuestions}
             >
-              <Text style={[styles.skipButtonText, isLastQuestion && styles.buttonTextDisabled]}>
-                Skip {'>'}
+              <Text style={[styles.skipButtonText, noQuestions && styles.buttonTextDisabled]}>
+                {isLastQuestion ? 'Finish' : 'Skip >'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -750,9 +793,14 @@ const styles = StyleSheet.create({
     // marginBottom: 24,
   },
   optionsGrid: {
+    flex: 1,
+    flexDirection: 'column',
+    gap: 8,
+  },
+  optionRow: {
     flexDirection: 'row',
     gap: 22,
-    flex: 1,
+    alignItems: 'stretch',
   },
   optionsColumn: {
     // flex: 1,
@@ -760,12 +808,14 @@ const styles = StyleSheet.create({
   },
   optionButton: {
     backgroundColor: '#f7faf5',
-    paddingHorizontal: 26,
+    paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: '#000',
     alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
   },
   selectedOption: {
     backgroundColor: '#9BEC00',

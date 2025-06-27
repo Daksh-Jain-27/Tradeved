@@ -26,11 +26,13 @@ export const QuestCardItem = ({
   brandName,
 }: QuestCardItemProps) => {
   const router = useRouter();
+  const MAX_TITLE_LENGTH = 15;
+  const displayTitle = questName.length > MAX_TITLE_LENGTH ? questName.slice(0, MAX_TITLE_LENGTH) + '...' : questName;
 
   return (
     <TouchableOpacity
       onPress={() => router.push({
-        pathname: '/quest-details/[id]',
+        pathname: '/quests/quest-details/[id]',
         params: { id },
       })}
       style={styles.questCard}
@@ -45,7 +47,7 @@ export const QuestCardItem = ({
                 resizeMode="contain"
               />
             </View>
-            <Text style={styles.brandText}>{questName}</Text>
+            <Text style={styles.brandText}>{displayTitle}</Text>
           </View>
           <View style={styles.row}>
             <View style={styles.avatarStack}>
@@ -129,6 +131,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     gap: 6,
     marginBottom: 12,
+    width: 150,
   },
   brandIconWrapper: {
     width: 20,

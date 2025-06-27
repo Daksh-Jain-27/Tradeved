@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { SpaceCard } from '../components/SpaceCard';
+import { SpaceCard } from '../../components/SpaceCard';
 
 type SpaceCardItem = {
   id: string;
@@ -63,7 +63,7 @@ export default function Spaces() {
         id: space.id,
         title: space.name || 'Unnamed Space',
         quests: `${space.quests?.length || 0} Quests`,
-        spaceIcon: space.logo_url ? { uri: space.logo_url } : require('../assets/images/lazada.png'),
+        spaceIcon: space.logo_url ? { uri: space.logo_url } : require('../../assets/images/lazada.png'),
         categories: space.category || ['General'],
       }));
 
@@ -113,7 +113,7 @@ export default function Spaces() {
       >
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => router.push('/(tabs)/quest')}
+          onPress={() => router.back()}
         >
           <Ionicons name="arrow-back" size={28} color="#fff" />
         </TouchableOpacity>
