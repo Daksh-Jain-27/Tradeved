@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, Rect } from 'react-native-svg';
 import { Header } from '../../components/Header';
 
@@ -48,7 +49,7 @@ const ProgressCircle = ({ progress }: { progress: number }) => {
           stroke="#9bec00"
           strokeWidth={4}
           fill="transparent"
-          strokeDasharray={`${circumference * (progress/100)} ${circumference}`}
+          strokeDasharray={`${circumference * (progress / 100)} ${circumference}`}
           strokeDashoffset={0}
           transform="rotate(-90 24 24)"
         />
@@ -224,18 +225,49 @@ const generateCalendarData = (date: Date): CalendarDay[][] => {
   return calendarData;
 };
 
+const csvProviders = [
+  'CSV Provider',
+  'Zerodha',
+  'Upstox',
+  'Angel One',
+];
+
+// Add type for selected file
+type SelectedFile = {
+  name: string;
+  size: number;
+  uri: string;
+  mimeType?: string;
+} | null;
+
 export default function Journal() {
   const [activeTab, setActiveTab] = useState(0);
   const [activeFilter, setActiveFilter] = useState(0);
   const [activeChartTab, setActiveChartTab] = useState(0);
-  const [currentDate, setCurrentDate] = useState(new Date(2024, 6)); // July 2024
+  const [currentDate, setCurrentDate] = useState(new Date(2024, 6));
   const [currentCalendarData, setCurrentCalendarData] = useState(generateCalendarData(new Date(2024, 6)));
+  const [selectedProvider, setSelectedProvider] = useState(csvProviders[0]);
+  const [showAddTradeData, setShowAddTradeData] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<SelectedFile>(null);
   const router = useRouter();
 
   const handleTabPress = (i: number) => {
-    setActiveTab(i);
     if (i === 1) {
-      router.push('/journal/AddTradeData');
+      setShowAddTradeData(!showAddTradeData);
+      setActiveTab(showAddTradeData ? 0 : 1);
+      // Reset states when toggling Add Trade Data tab
+      if (showAddTradeData) {
+        setSelectedFile(null);
+        setUploadSuccess(false);
+        setIsUploading(false);
+      }
+    } else {
+      setActiveTab(i);
+      setShowAddTradeData(false);
+      setIsDropdownOpen(false);
     }
   };
 
@@ -250,26 +282,229 @@ export default function Journal() {
     setCurrentCalendarData(generateCalendarData(newDate));
   };
 
-  return (
-    <View style={{ flex: 1, backgroundColor: '#23251f' }}>
-      {/* Header is the only fixed component */}
-      <Header />
+  const pickDocument = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        multiple: false
+      });
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: HEADER_HEIGHT }}>
-        {/* Tabs Row - More compact, matching screenshot */}
-        <View style={styles.tabsRow}>
-          {tabs.map((tab, i) => (
-            <TouchableOpacity
-              key={tab}
-              style={[styles.tabButton, i === activeTab && styles.tabButtonActive]}
-              onPress={() => handleTabPress(i)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.tabButtonText, i === activeTab && styles.tabButtonTextActive]}>{tab}</Text>
-            </TouchableOpacity>
-          ))}
+      if (result.canceled) {
+        return;
+      }
+
+      if (result.assets && result.assets.length > 0) {
+        const file = result.assets[0];
+        
+        // Get file extension and check if it's CSV
+        const fileExtension = file.name.split('.').pop()?.toLowerCase();
+        if (fileExtension !== 'csv') {
+          Alert.alert(
+            'Invalid File Type',
+            'Please select a CSV file',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
+
+        // Check file size (10MB = 10485760 bytes)
+        if (file.size && file.size > 10485760) {
+          Alert.alert(
+            'File Too Large',
+            'Please select a file smaller than 10MB',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
+
+        const selectedFileData = {
+          name: file.name,
+          size: file.size || 0,
+          uri: file.uri,
+          mimeType: file.mimeType
+        };
+
+        setSelectedFile(selectedFileData);
+      }
+    } catch (err) {
+      console.error('Error picking document:', err);
+      Alert.alert(
+        'Error',
+        'Failed to select file. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const handleFileUpload = async (file: SelectedFile) => {
+    if (!file) return;
+
+    try {
+      setIsUploading(true);
+
+      // For demonstration, we'll simulate an upload with FormData
+      const formData = new FormData();
+      formData.append('file', {
+        uri: file.uri,
+        type: file.mimeType || 'text/csv',
+        name: file.name
+      } as any);
+
+      // Simulate network request
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // In a real app, you would make an actual API call here:
+      /*
+      const response = await fetch('YOUR_UPLOAD_URL', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+      */
+
+      setUploadSuccess(true);
+    } catch (error) {
+      console.error('Upload failed:', error);
+      Alert.alert(
+        'Upload Failed',
+        'Failed to upload file. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const renderUploadSuccess = () => {
+    return (
+      <View style={styles.uploadSuccessContainer}>
+        <Text style={styles.uploadedTitle}>Uploaded!</Text>
+        <Text style={styles.uploadedMessage}>
+          Please wait your data is getting loaded. DO NOT REFRESH otherwise you might lose your data.
+        </Text>
+        <Text style={styles.uploadedSubMessage}>
+          This data entry is created on 'Saved Portfolio' screen.
+        </Text>
+        <TouchableOpacity 
+          style={styles.uploadAnotherBtn}
+          onPress={() => {
+            setUploadSuccess(false);
+            setSelectedFile(null);
+          }}
+        >
+          <Text style={styles.uploadAnotherBtnText}>Upload Another File</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  const renderAddTradeData = () => {
+    if (uploadSuccess) {
+      return renderUploadSuccess();
+    }
+
+    return (
+      <View style={styles.uploadSection}>
+        <Text style={styles.uploadTitle}>Upload CSV</Text>
+        <Text style={styles.label}>Select CSV Provider</Text>
+        
+        {/* Custom Dropdown */}
+        <View style={styles.dropdownContainer}>
+          <TouchableOpacity 
+            style={styles.dropdownButton}
+            onPress={() => setIsDropdownOpen(!isDropdownOpen)}
+          >
+            <Text style={styles.dropdownButtonText}>{selectedProvider}</Text>
+            <Ionicons 
+              name={isDropdownOpen ? "chevron-up" : "chevron-down"} 
+              size={20} 
+              color="#fff" 
+            />
+          </TouchableOpacity>
+          
+          {isDropdownOpen && (
+            <View style={styles.dropdownList}>
+              {csvProviders.map((provider) => (
+                <TouchableOpacity
+                  key={provider}
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setSelectedProvider(provider);
+                    setIsDropdownOpen(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.dropdownItemText,
+                    selectedProvider === provider && styles.dropdownItemTextSelected
+                  ]}>
+                    {provider}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
 
+        <Text style={styles.fileFormat}>File format: CSV, .xlsx, file size 1 mb</Text>
+        
+        <TouchableOpacity 
+          style={[styles.dropZone, selectedFile && styles.dropZoneWithFile]}
+          onPress={pickDocument}
+        >
+          <View style={styles.fileContentContainer}>
+            <Text style={styles.dropZoneIcon}>📄</Text>
+            {selectedFile ? (
+              <View style={styles.selectedFileContainer}>
+                <Text style={styles.selectedFileName} numberOfLines={1} ellipsizeMode="middle">
+                  {selectedFile.name}
+                </Text>
+                <Text style={styles.fileSize}>
+                  {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.dropZoneText}>Upload CSV file</Text>
+            )}
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[
+            styles.uploadBtn, 
+            (isUploading || !selectedFile) && styles.uploadBtnDisabled
+          ]}
+          onPress={() => selectedFile && handleFileUpload(selectedFile)}
+          disabled={isUploading || !selectedFile}
+        >
+          <Text style={styles.uploadBtnText}>
+            {isUploading ? 'Uploading...' : 'Upload Now'}
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.infoNote}>
+          <Text style={styles.infoNoteText}>
+            Connect Broker and Manual data uploading feature will be live soon
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
+  const handleDayPress = (day: CalendarDay) => {
+    if (day.label) {
+      router.push('/journal/JournalEntry');
+    }
+  };
+
+  const renderMainContent = () => {
+    return (
+      <>
         {/* Month Navigation Row */}
         <View style={styles.monthNavigationRow}>
           <View style={styles.monthYearContainer}>
@@ -336,7 +571,11 @@ export default function Journal() {
             {currentCalendarData.map((week, i) => (
               <View key={i} style={styles.calendarWeek}>
                 {week.map((day, j) => day.label ? (
-                  <View key={j} style={[styles.calendarDay, { backgroundColor: day.color || '#bef264' }]}>
+                  <TouchableOpacity 
+                    key={j} 
+                    style={[styles.calendarDay, { backgroundColor: day.color || '#bef264' }]}
+                    onPress={() => handleDayPress(day)}
+                  >
                     {/* Date in top right */}
                     <Text style={styles.dayLabel}>{day.label}</Text>
 
@@ -357,7 +596,7 @@ export default function Journal() {
                         <Text style={styles.dayBottomText}>1</Text>
                       </View>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 ) : (
                   <View key={j} style={styles.calendarDayEmpty} />
                 ))}
@@ -377,14 +616,14 @@ export default function Journal() {
                   <Text style={styles.netPnlValue}>₹ 2,74,900</Text>
                 </View>
                 <View style={styles.toggleContainer}>
-                  <TouchableOpacity 
-                    onPress={() => setActiveChartTab(0)} 
+                  <TouchableOpacity
+                    onPress={() => setActiveChartTab(0)}
                     style={[styles.toggleButton, activeChartTab === 0 && styles.toggleButtonActive]}
                   >
                     <Text style={[styles.toggleText, activeChartTab === 0 && styles.toggleTextActive]}>Daily</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity 
-                    onPress={() => setActiveChartTab(1)} 
+                  <TouchableOpacity
+                    onPress={() => setActiveChartTab(1)}
                     style={[styles.toggleButton, activeChartTab === 1 && styles.toggleButtonActive]}
                   >
                     <Text style={[styles.toggleText, activeChartTab === 1 && styles.toggleTextActive]}>Cumulative</Text>
@@ -427,6 +666,40 @@ export default function Journal() {
             <Text style={styles.footerMonth}>March 2024</Text>
           </View>
         </View>
+      </>
+    );
+  };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: '#242620' }}>
+      {/* Header is the only fixed component */}
+      <Header />
+
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: HEADER_HEIGHT }}>
+        {/* Tabs Row - More compact, matching screenshot */}
+        <View style={styles.tabsRow}>
+          {tabs.map((tab, i) => (
+            <TouchableOpacity
+              key={tab}
+              style={[
+                styles.tabButton,
+                i === activeTab ? styles.tabButtonActive : null
+              ]}
+              onPress={() => handleTabPress(i)}
+              activeOpacity={0.8}
+            >
+              <Text style={[
+                styles.tabButtonText,
+                i === activeTab ? styles.tabButtonTextActive : null
+              ]}>
+                {tab}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Content */}
+        {showAddTradeData ? renderAddTradeData() : renderMainContent()}
       </ScrollView>
     </View>
   );
@@ -435,7 +708,7 @@ export default function Journal() {
 const styles = StyleSheet.create({
   tabsRow: {
     flexDirection: 'row',
-    backgroundColor: '#23251f',
+    backgroundColor: '#0f1209',
     borderRadius: 8,
     padding: 3,
     margin: 8,
@@ -759,5 +1032,180 @@ const styles = StyleSheet.create({
   footerMonth: {
     color: '#a3a3a3',
     fontSize: 13,
+  },
+  uploadSection: {
+    margin: 24,
+    backgroundColor: 'transparent',
+    zIndex: 1, // Ensure dropdown shows above other content
+  },
+  uploadTitle: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 20,
+    marginBottom: 14
+  },
+  label: {
+    color: '#fff',
+    fontSize: 14,
+    marginBottom: 8
+  },
+  dropdownContainer: {
+    position: 'relative',
+    zIndex: 1000,
+    marginBottom: 14
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#fff',
+    borderRadius: 8,
+    // backgroundColor: '#0f1209',
+  },
+  dropdownButtonText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  dropdownList: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: '#242620',
+    borderWidth: 1,
+    borderColor: '#fff',
+    borderRadius: 8,
+    marginTop: 4,
+    maxHeight: 200,
+  },
+  dropdownItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  dropdownItemText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  dropdownItemTextSelected: {
+    color: '#9bec00',
+  },
+  fileFormat: {
+    color: '#fff',
+    fontSize: 13,
+    marginBottom: 8
+  },
+  dropZone: {
+    borderWidth: 1,
+    borderColor: '#fff',
+    borderRadius: 8,
+    minHeight: 90,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+    backgroundColor: 'transparent',
+    padding: 16,
+  },
+  dropZoneWithFile: {
+    borderColor: '#9bec00',
+    borderStyle: 'dashed',
+  },
+  fileContentContainer: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dropZoneIcon: {
+    fontSize: 28,
+    color: '#a3a3a3',
+  },
+  dropZoneText: {
+    color: '#fff',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  selectedFileContainer: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 4,
+  },
+  selectedFileName: {
+    color: '#fff',
+    fontSize: 14,
+    maxWidth: '90%',
+    textAlign: 'center',
+  },
+  fileSize: {
+    color: '#9bec00',
+    fontSize: 12,
+  },
+  uploadBtn: {
+    backgroundColor: '#a3e635',
+    borderRadius: 6,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 16
+  },
+  uploadBtnText: {
+    color: '#23251f',
+    fontWeight: 'bold',
+    fontSize: 16
+  },
+  infoNote: {
+    backgroundColor: '#383838',
+    borderRadius: 4,
+    padding: 10,
+    marginTop: 8
+  },
+  infoNoteText: {
+    color: '#fff',
+    fontSize: 13,
+  },
+  uploadSuccessContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    marginTop: 100,
+  },
+  uploadedTitle: {
+    color: '#fff',
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  uploadedMessage: {
+    color: '#fff',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 12,
+    lineHeight: 24,
+  },
+  uploadedSubMessage: {
+    color: '#fff',
+    fontSize: 14,
+    textAlign: 'center',
+    opacity: 0.8,
+  },
+  uploadAnotherBtn: {
+    backgroundColor: '#9bec00',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 24,
+  },
+  uploadAnotherBtnText: {
+    color: '#242620',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  uploadBtnDisabled: {
+    opacity: 0.7,
   },
 });
