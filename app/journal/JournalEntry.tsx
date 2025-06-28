@@ -1,21 +1,34 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { Stack } from 'expo-router';
 
-interface TradeData {
+interface CalendarDay {
+    date: number;
     amount: string;
-    type: 'profit' | 'loss';
     trades: number;
+    icon1Count: number;
+    icon2Count: number;
+    dayName: string;
 }
 
-const tradeData: TradeData[] = [
-    { amount: '27.3k', type: 'profit', trades: 4 },
-    { amount: '19.2k', type: 'loss', trades: 2 },
-    { amount: '26.3k', type: 'profit', trades: 3 },
-    { amount: '26.3k', type: 'loss', trades: 1 },
-];
+const generateMonthDays = (date: Date): CalendarDay[] => {
+    const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+    return Array.from({ length: daysInMonth }, (_, i) => {
+        const currentDate = new Date(date.getFullYear(), date.getMonth(), i + 1);
+        return {
+            date: i + 1,
+            amount: `₹${Math.floor(Math.random() * 30)}.${Math.floor(Math.random() * 9)}k`,
+            trades: Math.floor(Math.random() * 5) + 1,
+            icon1Count: Math.floor(Math.random() * 3),
+            icon2Count: Math.floor(Math.random() * 3),
+            dayName: currentDate.toLocaleDateString('en-US', { weekday: 'short' })
+        };
+    });
+};
+
+const currentDate = new Date(2024, 6); // July 2024
+const monthDays = generateMonthDays(currentDate);
 
 const tags = [
     'User Management',
@@ -28,6 +41,7 @@ const tags = [
 
 export default function JournalEntry() {
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [selectedDay, setSelectedDay] = useState<number | null>(null);
     const router = useRouter();
 
     const handleTagPress = (tag: string) => {
@@ -69,23 +83,45 @@ export default function JournalEntry() {
                 {/* Date Section */}
                 <Text style={styles.dateText}>July, 2024</Text>
 
-                {/* Trade Cards */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tradeCardsContainer}>
-                    {tradeData.map((data, index) => (
-                        <View
+                {/* Calendar Day Cards */}
+                <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false} 
+                    style={styles.cardsContainer}
+                    contentContainerStyle={styles.cardsContent}
+                >
+                    {monthDays.map((day, index) => (
+                        <TouchableOpacity
                             key={index}
                             style={[
-                                styles.tradeCard,
-                                { backgroundColor: data.type === 'profit' ? '#9bec00' : '#ff9eb6' }
+                                styles.dayCard,
+                                selectedDay === day.date && styles.selectedDay
                             ]}
+                            onPress={() => setSelectedDay(day.date)}
                         >
-                            <Text style={styles.tradeAmount}>{data.amount}</Text>
-                            <Text style={styles.tradeCount}>{data.trades} Trades</Text>
-                        </View>
+                            <View style={styles.cardHeader}>
+                                <Text style={styles.amountText}>{day.amount}</Text>
+                                <Text style={styles.dateNumber}>{day.date.toString().padStart(2, '0')}</Text>
+                            </View>
+                            <Text style={styles.tradesText}>{day.trades} Trades</Text>
+                            <View style={styles.bottomRow}>
+                                <View style={styles.iconsRow}>
+                                    <View style={styles.iconContainer}>
+                                        <Ionicons name="book" size={9} color="#000" />
+                                        <Text style={styles.iconCount}>{day.icon1Count}</Text>
+                                    </View>
+                                    <View style={styles.iconContainer}>
+                                        <Ionicons name="book" size={9} color="#000" />
+                                        <Text style={styles.iconCount}>{day.icon2Count}</Text>
+                                    </View>
+                                </View>
+                                <Text style={styles.dayName}>{day.dayName}</Text>
+                            </View>
+                        </TouchableOpacity>
                     ))}
                 </ScrollView>
 
-                {/* Title Input */}
+                {/* Input sections remain the same */}
                 <View style={styles.inputSection}>
                     <Text style={styles.inputLabel}>Add Title</Text>
                     <TextInput
@@ -95,7 +131,6 @@ export default function JournalEntry() {
                     />
                 </View>
 
-                {/* Tags Input */}
                 <View style={styles.inputSection}>
                     <Text style={styles.inputLabel}>Add tags</Text>
                     <TextInput
@@ -127,7 +162,6 @@ export default function JournalEntry() {
                     </View>
                 </View>
 
-                {/* Notes Section */}
                 <View style={styles.inputSection}>
                     <Text style={styles.inputLabel}>Notes</Text>
                     <TextInput
@@ -147,8 +181,8 @@ export default function JournalEntry() {
                     <TouchableOpacity style={styles.cancelButton}>
                         <Text style={styles.cancelButtonText}>Cancel</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.moreButton}>
-                        <Ionicons name="ellipsis-vertical" size={24} color="#fff" />
+                    <TouchableOpacity style={styles.uploadButton}>
+                        <Ionicons name="cloud-upload-outline" size={24} color="#fff" />
                     </TouchableOpacity>
                 </View>
             </ScrollView>
@@ -181,25 +215,69 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginBottom: 16,
     },
-    tradeCardsContainer: {
-        flexDirection: 'row',
+    cardsContainer: {
         marginBottom: 24,
     },
-    tradeCard: {
-        padding: 12,
-        borderRadius: 8,
-        marginRight: 12,
-        minWidth: 100,
-        alignItems: 'center',
+    cardsContent: {
+        paddingRight: 16,
     },
-    tradeAmount: {
+    dayCard: {
+        minWidth: 97,
+        minHeight: 54,
+        borderRadius: 8,
+        paddingVertical: 6,
+        paddingHorizontal: 8,
+        marginRight: 12,
+        backgroundColor: '#9bec00',
+        justifyContent: 'space-between',
+    },
+    selectedDay: {
+        borderWidth: 2,
+        borderColor: '#fff',
+    },
+    cardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 0,
+    },
+    amountText: {
         color: '#000',
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: 'bold',
     },
-    tradeCount: {
+    dateNumber: {
         color: '#000',
-        fontSize: 12,
+        fontSize: 9,
+        fontWeight: '600',
+    },
+    tradesText: {
+        color: '#000',
+        fontSize: 9,
+        // marginTop: 4,
+        
+    },
+    bottomRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    iconsRow: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    iconContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 2,
+    },
+    iconCount: {
+        color: '#000',
+        fontSize: 9,
+    },
+    dayName: {
+        color: '#000',
+        fontSize: 9,
     },
     inputSection: {
         marginBottom: 24,
@@ -278,6 +356,14 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: '600',
+    },
+    uploadButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 8,
+        backgroundColor: '#31332b',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     moreButton: {
         width: 44,
