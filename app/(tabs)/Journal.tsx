@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import * as DocumentPicker from 'expo-document-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Animated, PanResponder, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, Rect } from 'react-native-svg';
 import { Header } from '../../components/Header';
 
@@ -187,6 +188,28 @@ const filterColors = [
 
 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
+// Mock data for saved portfolio table
+const savedPortfolioData = [
+  { id: 'id123', portfolioName: 'Mar 2024', brokerName: 'Dhan', timestamp: '-4,883', notes: '3', tags: '4' },
+  { id: 'id123', portfolioName: 'Jul 2024', brokerName: '', timestamp: '-4,883', notes: '4', tags: '8' },
+  { id: 'id123', portfolioName: 'Mar 2024', brokerName: 'Zerodha', timestamp: '-4,883', notes: '3', tags: '4' },
+  { id: 'id123', portfolioName: 'Aug 2024', brokerName: '', timestamp: '-4,883', notes: '4', tags: '4' },
+  { id: 'id123', portfolioName: 'Mar 2024', brokerName: 'Dhan', timestamp: '-4,883', notes: '3', tags: '4' },
+  { id: 'id123', portfolioName: 'Oct 2024', brokerName: '', timestamp: '-4,883', notes: '4', tags: '4' },
+  { id: 'id123', portfolioName: 'Mar 2024', brokerName: 'Zerodha', timestamp: '-4,883', notes: '3', tags: '4' },
+  { id: 'id123', portfolioName: 'Dec 2024', brokerName: '', timestamp: '-4,883', notes: '4', tags: '4' },
+  { id: 'id123', portfolioName: 'Mar 2024', brokerName: 'Zerodha', timestamp: '-4,883', notes: '3', tags: '4' },
+  { id: 'id123', portfolioName: 'Mar 2024', brokerName: 'Zerodha', timestamp: '-4,883', notes: '3', tags: '4' },
+  { id: 'id123', portfolioName: 'Mar 2024', brokerName: 'Zerodha', timestamp: '-4,883', notes: '3', tags: '4' },
+  { id: 'id123', portfolioName: 'Mar 2024', brokerName: 'Zerodha', timestamp: '-4,883', notes: '3', tags: '4' },
+  { id: 'id123', portfolioName: 'Mar 2024', brokerName: 'Zerodha', timestamp: '-4,883', notes: '3', tags: '4' },
+  { id: 'id123', portfolioName: 'Mar 2024', brokerName: 'Zerodha', timestamp: '-4,883', notes: '3', tags: '4' },
+  { id: 'id123', portfolioName: 'Mar 2024', brokerName: 'Zerodha', timestamp: '-4,883', notes: '3', tags: '4' },
+  { id: 'id123', portfolioName: 'Mar 2024', brokerName: 'Zerodha', timestamp: '-4,883', notes: '3', tags: '4' },
+  { id: 'id123', portfolioName: 'Mar 2024', brokerName: 'Zerodha', timestamp: '-4,883', notes: '3', tags: '4' },
+  { id: 'id123', portfolioName: 'Mar 2024', brokerName: 'Zerodha', timestamp: '-4,883', notes: '3', tags: '4' },
+];
+
 interface CalendarDay {
   label?: string;
   pnt?: number;
@@ -253,6 +276,65 @@ export default function Journal() {
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [selectedFile, setSelectedFile] = useState<SelectedFile>(null);
   const router = useRouter();
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(months[currentDate.getMonth()]);
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear().toString());
+  const pan = useRef(new Animated.ValueXY()).current;
+
+  const years = Array.from({ length: 10 }, (_, i) => (2024 + i).toString());
+
+  const animatedTranslateY = pan.y.interpolate({
+    inputRange: [0, 1000],
+    outputRange: [0, 1000],
+    extrapolate: 'clamp'
+  });
+
+  const animatedOpacity = pan.y.interpolate({
+    inputRange: [0, 100, 200],
+    outputRange: [1, 0.8, 0],
+    extrapolate: 'clamp'
+  });
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gesture) => {
+        return Math.abs(gesture.dy) > 10;
+      },
+      onPanResponderMove: (_, gesture) => {
+        if (gesture.dy > 0) {
+          // Allow full dragging with minimal resistance
+          pan.setValue({ x: 0, y: gesture.dy });
+        }
+      },
+      onPanResponderRelease: (_, gesture) => {
+        const dragDistance = gesture.dy;
+
+        if (dragDistance > 200) {
+          // First set showDatePicker to false immediately to prevent flash
+          setShowDatePicker(false);
+          // Then reset the position without animation
+          pan.setValue({ x: 0, y: 0 });
+        } else {
+          // Snap back with spring
+          Animated.spring(pan.y, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 100,
+            friction: 12,
+            restDisplacementThreshold: 10,
+            restSpeedThreshold: 10,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
+  useEffect(() => {
+    if (showDatePicker) {
+      pan.setValue({ x: 0, y: 0 });
+    }
+  }, [showDatePicker]);
 
   const handleTabPress = (i: number) => {
     if (i === 1) {
@@ -502,10 +584,176 @@ export default function Journal() {
     }
   };
 
+  const renderDatePicker = () => {
+    if (!showDatePicker) return null;
+    
+    return (
+      <View style={[StyleSheet.absoluteFill, { zIndex: 2000 }]}>
+        <Animated.View
+          style={[
+            StyleSheet.absoluteFill,
+            { opacity: animatedOpacity }
+          ]}
+        >
+          <BlurView
+            intensity={40}
+            style={StyleSheet.absoluteFill}
+            tint="light"
+          />
+        </Animated.View>
+        <Pressable
+          style={[StyleSheet.absoluteFill, styles.modalOverlay]}
+          onPress={() => {
+            setShowDatePicker(false);
+            pan.setValue({ x: 0, y: 0 });
+          }}
+        >
+          <Animated.View
+            style={[
+              styles.datePickerContainer,
+              {
+                transform: [{ translateY: animatedTranslateY }],
+                opacity: animatedOpacity
+              }
+            ]}
+            {...panResponder.panHandlers}
+          >
+            <View style={styles.dragHandleContainer}>
+              <View style={styles.dragHandle} />
+            </View>
+            <Text style={styles.pickerTitle}>Edit Month and Year</Text>
+            <View style={styles.divider} />
+
+            <View style={styles.pickerContent}>
+              {/* Month Selection */}
+              <View style={styles.pickerSection}>
+                <Text style={styles.pickerLabel}>Month</Text>
+                <ScrollView 
+                  style={styles.pickerScroll}
+                  showsVerticalScrollIndicator={false}
+                  nestedScrollEnabled
+                >
+                  {months.map((month) => (
+                    <TouchableOpacity
+                      key={month}
+                      style={[
+                        styles.pickerItem,
+                        selectedMonth === month && styles.pickerItemSelected
+                      ]}
+                      onPress={() => setSelectedMonth(month)}
+                    >
+                      <Text style={[
+                        styles.pickerItemText,
+                        selectedMonth === month && styles.pickerItemTextSelected
+                      ]}>{month}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
+              {/* Year Selection */}
+              <View style={styles.pickerSection}>
+                <Text style={styles.pickerLabel}>Year</Text>
+                <ScrollView 
+                  style={styles.pickerScroll}
+                  showsVerticalScrollIndicator={false}
+                  nestedScrollEnabled
+                >
+                  {years.map((year) => (
+                    <TouchableOpacity
+                      key={year}
+                      style={[
+                        styles.pickerItem,
+                        selectedYear === year && styles.pickerItemSelected
+                      ]}
+                      onPress={() => setSelectedYear(year)}
+                    >
+                      <Text style={[
+                        styles.pickerItemText,
+                        selectedYear === year && styles.pickerItemTextSelected
+                      ]}>{year}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+
+            <TouchableOpacity 
+              style={styles.continueButton}
+              onPress={() => {
+                const newMonth = months.indexOf(selectedMonth);
+                const newYear = parseInt(selectedYear);
+                const newDate = new Date(newYear, newMonth);
+                setCurrentDate(newDate);
+                setCurrentCalendarData(generateCalendarData(newDate));
+                setShowDatePicker(false);
+              }}
+            >
+              <Text style={styles.continueButtonText}>Continue</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </Pressable>
+      </View>
+    );
+  };
+
+  const renderSavedPortfolio = () => {
+    return (
+      <View style={styles.savedPortfolioContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View>
+            {/* Table Header */}
+            <View style={styles.tableHeader}>
+              <Text style={[styles.headerCell, { width: 80 }]}>ID</Text>
+              <Text style={[styles.headerCell, { width: 120 }]}>Portfolio Name</Text>
+              <Text style={[styles.headerCell, { width: 120 }]}>Broker Name</Text>
+              <Text style={[styles.headerCell, { width: 100 }]}>Timestamp</Text>
+              <Text style={[styles.headerCell, { width: 80 }]}>Notes</Text>
+              <Text style={[styles.headerCell, { width: 80 }]}>Tags</Text>
+              <Text style={[styles.headerCell, { width: 100 }]}>Actions</Text>
+            </View>
+
+            {/* Table Body */}
+            <ScrollView style={styles.tableBody}>
+              {savedPortfolioData.map((item, index) => (
+                <View 
+                  key={index} 
+                  style={[
+                    styles.tableRow,
+                    index % 2 === 0 ? styles.tableRowDark : styles.tableRowLight
+                  ]}
+                >
+                  <Text style={[styles.cell, { width: 80 }]}>{item.id}</Text>
+                  <View style={[styles.cell, { width: 120, flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+                    <Text style={styles.cellText}>{item.portfolioName}</Text>
+                    <TouchableOpacity>
+                      <Ionicons name="pencil" size={14} color="#9bec00" />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={[styles.cell, { width: 120 }]}>{item.brokerName}</Text>
+                  <Text style={[styles.cell, { width: 100 }]}>{item.timestamp}</Text>
+                  <Text style={[styles.cell, { width: 80 }]}>{item.notes}</Text>
+                  <Text style={[styles.cell, { width: 80 }]}>{item.tags}</Text>
+                  <View style={[styles.cell, { width: 100, flexDirection: 'row', gap: 12 }]}>
+                    <TouchableOpacity>
+                      <Ionicons name="eye-outline" size={18} color="#9bec00" />
+                    </TouchableOpacity>
+                    <TouchableOpacity>
+                      <Ionicons name="trash-outline" size={18} color="#ff4d4f" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  };
+
   const renderMainContent = () => {
     return (
       <>
-        {/* Month Navigation Row */}
         <View style={styles.monthNavigationRow}>
           <View style={styles.monthYearContainer}>
             <TouchableOpacity
@@ -517,9 +765,14 @@ export default function Journal() {
               </View>
             </TouchableOpacity>
 
-            <Text style={styles.monthYearText}>
-              {months[currentDate.getMonth()]}, {currentDate.getFullYear()}
-            </Text>
+            <TouchableOpacity 
+              onPress={() => setShowDatePicker(true)}
+              style={styles.monthYearButton}
+            >
+              <Text style={styles.monthYearText}>
+                {months[currentDate.getMonth()]}, {currentDate.getFullYear()}
+              </Text>
+            </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.monthNavButton}
@@ -672,11 +925,8 @@ export default function Journal() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#242620' }}>
-      {/* Header is the only fixed component */}
       <Header />
-
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: HEADER_HEIGHT }}>
-        {/* Tabs Row - More compact, matching screenshot */}
         <View style={styles.tabsRow}>
           {tabs.map((tab, i) => (
             <TouchableOpacity
@@ -698,9 +948,11 @@ export default function Journal() {
           ))}
         </View>
 
-        {/* Content */}
-        {showAddTradeData ? renderAddTradeData() : renderMainContent()}
+        {activeTab === 1 && showAddTradeData ? renderAddTradeData() : 
+         activeTab === 2 ? renderSavedPortfolio() : 
+         renderMainContent()}
       </ScrollView>
+      {renderDatePicker()}
     </View>
   );
 }
@@ -757,7 +1009,6 @@ const styles = StyleSheet.create({
   arrowBox: {
     width: 18,
     height: 18,
-    // backgroundColor: '#2C2E27',
     borderRadius: 6,
     borderColor: '#9BEC00',
     borderWidth: 1,
@@ -776,7 +1027,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   filtersContainer: {
-    // backgroundColor: '#1a1c16',
     paddingVertical: 8,
     marginHorizontal: 8,
     borderRadius: 8,
@@ -819,13 +1069,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 8,
     marginTop: 8,
-    gap: 4, // Match the gap of calendar cells
+    gap: 4,
   },
   weekDayText: {
     color: '#a3a3a3',
     fontWeight: 'bold',
     fontSize: 13,
-    width: 49, // Match the width of calendar cells
+    width: 49,
     textAlign: 'center'
   },
   calendarGrid: {
@@ -834,13 +1084,13 @@ const styles = StyleSheet.create({
   },
   calendarWeek: {
     flexDirection: 'row',
-    justifyContent: 'flex-start', // Change from space-between to flex-start
+    justifyContent: 'flex-start',
     marginBottom: 4,
-    gap: 4, // Add consistent gap between cells
+    gap: 4,
   },
   calendarDay: {
-    width: 49, // Fixed width
-    height: 46, // Fixed height
+    width: 49,
+    height: 46,
     borderRadius: 4,
     padding: 1,
     position: 'relative',
@@ -889,8 +1139,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   calendarDayEmpty: {
-    width: 49, // Match exactly with calendarDay width
-    height: 46, // Match exactly with calendarDay height
+    width: 49,
+    height: 46,
   },
   chartSection: {
     backgroundColor: '#23251f',
@@ -1036,7 +1286,7 @@ const styles = StyleSheet.create({
   uploadSection: {
     margin: 24,
     backgroundColor: 'transparent',
-    zIndex: 1, // Ensure dropdown shows above other content
+    zIndex: 1,
   },
   uploadTitle: {
     color: '#fff',
@@ -1063,7 +1313,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#fff',
     borderRadius: 8,
-    // backgroundColor: '#0f1209',
   },
   dropdownButtonText: {
     color: '#fff',
@@ -1207,5 +1456,138 @@ const styles = StyleSheet.create({
   },
   uploadBtnDisabled: {
     opacity: 0.7,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'flex-end',
+  },
+  datePickerContainer: {
+    backgroundColor: '#2c2e27',
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    padding: 24,
+    paddingBottom: 32,
+  },
+  dragHandleContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+    marginTop: -8,
+  },
+  dragHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#fff',
+    borderRadius: 2,
+    opacity: 0.3,
+  },
+  pickerTitle: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#ffffff20',
+    marginBottom: 16,
+  },
+  pickerContent: {
+    flexDirection: 'row',
+    paddingVertical: 20,
+    gap: 20,
+  },
+  pickerSection: {
+    flex: 1,
+  },
+  pickerLabel: {
+    color: '#fff',
+    fontSize: 16,
+    marginBottom: 12,
+  },
+  pickerScroll: {
+    maxHeight: 200,
+  },
+  pickerItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  pickerItemSelected: {
+    backgroundColor: '#31332b',
+  },
+  pickerItemText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  pickerItemTextSelected: {
+    color: '#9bec00',
+    fontWeight: '600',
+  },
+  continueButton: {
+    backgroundColor: '#9bec00',
+    height: 48,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 24,
+  },
+  continueButtonText: {
+    color: '#242620',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  monthYearButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  savedPortfolioContainer: {
+    flex: 1,
+    backgroundColor: '#242620',
+    padding: 16,
+  },
+  horizontalScroll: {
+    borderRadius: 8,
+    backgroundColor: '#1a1c16',
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#31332b',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+  },
+  headerCell: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    paddingHorizontal: 8,
+  },
+  tableBody: {
+    // maxHeight removed to allow full scrolling
+  },
+  tableRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#31332b',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+  },
+  tableRowDark: {
+    backgroundColor: '#0f1209', // Darker row
+  },
+  tableRowLight: {
+    backgroundColor: '#1a1c16', // Lighter row
+  },
+  cell: {
+    paddingHorizontal: 8,
+    justifyContent: 'center',
+    color: '#fff',
+  },
+  cellText: {
+    color: '#fff',
+    fontSize: 14,
   },
 });
