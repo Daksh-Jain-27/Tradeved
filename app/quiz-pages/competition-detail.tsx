@@ -289,7 +289,7 @@ const CompetitionDetail: React.FC<CompetitionDetailProps> = ({ competitionId }) 
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8fafc", padding: 16 },
+  container: { flex: 1, backgroundColor: "#242620", padding: 16 },
   header: { alignItems: "center", marginBottom: 16 },
   headerTitle: { fontSize: 22, fontWeight: "bold", marginBottom: 4 },
   headerSubtitle: { color: "#64748b", fontSize: 14, marginBottom: 8 },

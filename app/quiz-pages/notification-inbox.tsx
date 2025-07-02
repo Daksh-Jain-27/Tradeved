@@ -214,7 +214,7 @@ const NotificationInbox: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8fafc", padding: 16 },
+  container: { flex: 1, backgroundColor: "#242620", padding: 16 },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
   headerTitle: { fontSize: 22, fontWeight: "bold", marginRight: 8 },
   unreadBadge: { backgroundColor: "#e5e7eb", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, marginLeft: 4 },

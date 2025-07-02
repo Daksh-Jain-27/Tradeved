@@ -141,7 +141,7 @@ const PostMatchResults: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8fafc", padding: 16 },
+  container: { flex: 1, backgroundColor: "#242620", padding: 16 },
   centered: { alignItems: "center", marginBottom: 12 },
   trophyWrap: { alignItems: "center", justifyContent: "center", marginBottom: 8 },
   trophyIcon: { zIndex: 2 },

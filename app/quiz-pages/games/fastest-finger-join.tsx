@@ -16,7 +16,7 @@ import { Stack, useRouter } from 'expo-router';
 const hsl = (h: number, s: number, l: number) => `hsl(${h}, ${s}%, ${l}%)`;
 
 const colors = {
-  background: hsl(222.2, 84, 4.9),
+  background: '#242620',
   foreground: hsl(210, 40, 98),
   card: hsl(222.2, 84, 4.9),
   "card-foreground": hsl(210, 40, 98),

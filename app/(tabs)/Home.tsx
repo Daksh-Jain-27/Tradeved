@@ -1,12 +1,70 @@
-import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import { Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AnimatedCircularProgress } from 'react-native-circular-progress';
 
 const { width } = Dimensions.get('window');
 
+interface GaugeCardProps {
+  title: string;
+  correct: number;
+  wrong: number;
+}
+
+const SemicircleGauge: React.FC<{ correct: number; wrong: number }> = ({ correct, wrong }) => {
+  const total = correct + wrong;
+  const correctPercent = total > 0 ? (correct / total) * 100 : 0;
+
+  return (
+    <View style={styles.gaugeContainer}>
+      <AnimatedCircularProgress
+        size={100}
+        width={12}
+        fill={correctPercent}
+        tintColor="#2ecc40"
+        backgroundColor="#ff4136"
+        arcSweepAngle={180}
+        rotation={270}
+        lineCap="round"
+      >
+        {() => (
+          <Text style={styles.percentText}>
+            {Math.round(correctPercent)}%
+          </Text>
+        )}
+      </AnimatedCircularProgress>
+    </View>
+  );
+};
+
+const GaugeCard: React.FC<GaugeCardProps> = ({ title, correct, wrong }) => (
+  <View style={styles.card1}>
+    <View style={styles.cardHeader1}>
+      <Text style={styles.cardTitle1}>{title}</Text>
+      <TouchableOpacity style={styles.dropdown1}>
+        <Text style={styles.dropdownText1}>Weekly</Text>
+        <MaterialIcons name="arrow-drop-down" size={16} color="#555151" />
+      </TouchableOpacity>
+    </View>
+    
+    <SemicircleGauge correct={correct} wrong={wrong} />
+    
+    <View style={styles.legendRow}>
+      <View style={styles.legendItem}>
+        <View style={[styles.legendDot, { backgroundColor: '#2ecc40' }]} />
+        <Text style={styles.legendText}>Correct</Text>
+      </View>
+      <View style={styles.legendItem}>
+        <View style={[styles.legendDot, { backgroundColor: '#ff4136' }]} />
+        <Text style={styles.legendText}>Wrong</Text>
+      </View>
+    </View>
+  </View>
+);
+
 const avatarUri = 'https://randomuser.me/api/portraits/women/44.jpg'; // Placeholder avatar
 
-const App = () => {
+export default function Home() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32, paddingTop: 16 }}>
       {/* Header */}
@@ -16,7 +74,7 @@ const App = () => {
           style={styles.logo}
           resizeMode="contain"
         />
-        <Link href="/quiz-pages/profile-screen" asChild>
+        <Link href="/quests/profile" asChild>
           <TouchableOpacity style={styles.profileButton}>
             <Image
               source={require('../../assets/images/profile.png')}
@@ -38,10 +96,10 @@ const App = () => {
         <View style={styles.pillBadge}>
           <Text style={styles.pillText}>Streak</Text>
           <Image
-                source={require('../../assets/images/fire.png')}
-                style={styles.statIcon}
-                resizeMode="contain"
-              />
+            source={require('../../assets/images/fire.png')}
+            style={styles.statIcon}
+            resizeMode="contain"
+          />
           <Text style={[styles.pillText, { marginLeft: 8 }]}>|</Text>
           <Text style={[styles.pillText, { marginLeft: 8 }]}>Your rank 7</Text>
         </View>
@@ -65,7 +123,7 @@ const App = () => {
             <Text style={styles.axisText}>Points</Text>
             <View style={styles.arrowUp} />
           </View>
-          
+
           {/* Graph grid */}
           <View style={styles.gridContainer}>
             {[100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0].map((value) => (
@@ -74,7 +132,7 @@ const App = () => {
                 <View style={styles.gridLine} />
               </View>
             ))}
-            
+
             {/* X-axis labels */}
             <View style={styles.xAxisContainer}>
               <View style={styles.xAxisLabels}>
@@ -91,8 +149,13 @@ const App = () => {
         </View>
       </View>
 
+      <View style={styles.row1}>
+        <GaugeCard title="Quests" correct={75} wrong={25} />
+        <GaugeCard title="Quiz" correct={60} wrong={40} />
+      </View>
+
       {/* Quests and Quiz */}
-      <View style={styles.row}>
+      {/* <View style={styles.row}>
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>Quests</Text>
@@ -100,9 +163,9 @@ const App = () => {
               <Text style={styles.dropdownTextSmall}>Weekly</Text>
               <MaterialIcons name="arrow-drop-down" size={16} color="#fff" />
             </TouchableOpacity>
-          </View>
-          {/* Gauge */}
-          <View style={styles.gaugeRow}>
+          </View> */}
+      {/* Gauge */}
+      {/* <View style={styles.gaugeRow}>
             <FontAwesome name="circle" size={24} color="#2ecc40" />
             <FontAwesome name="circle" size={24} color="#ff4136" style={{ marginLeft: 16 }} />
           </View>
@@ -118,9 +181,9 @@ const App = () => {
               <Text style={styles.dropdownTextSmall}>Weekly</Text>
               <MaterialIcons name="arrow-drop-down" size={16} color="#fff" />
             </TouchableOpacity>
-          </View>
-          {/* Gauge */}
-          <View style={styles.gaugeRow}>
+          </View> */}
+      {/* Gauge */}
+      {/* <View style={styles.gaugeRow}>
             <FontAwesome name="circle" size={24} color="#2ecc40" />
             <FontAwesome name="circle" size={24} color="#ff4136" style={{ marginLeft: 16 }} />
           </View>
@@ -129,7 +192,7 @@ const App = () => {
             <Text style={styles.gaugeLabel}>Wrong</Text>
           </View>
         </View>
-      </View>
+      </View> */}
 
       {/* Journal and Paper Trades */}
       <View style={styles.row}>
@@ -138,30 +201,58 @@ const App = () => {
             <Text style={styles.cardTitle}>Journal</Text>
             <TouchableOpacity style={styles.dropdownSmall}>
               <Text style={styles.dropdownTextSmall}>Weekly</Text>
-              <MaterialIcons name="arrow-drop-down" size={16} color="#fff" />
+              <MaterialIcons name="arrow-drop-down" size={12} color="#555151" />
             </TouchableOpacity>
           </View>
-          <Text style={styles.journalText}>Total journal entries <Text style={{ fontWeight: 'bold' }}>220</Text></Text>
-          <Text style={styles.journalText}>Brokers added <Text style={{ fontWeight: 'bold' }}>Csv file added</Text></Text>
+          <View style={styles.statsContainer}>
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Total journal entries</Text>
+              <Text style={styles.statValue}>220</Text>
+            </View>
+            <View style={styles.subStatsRow}>
+              <View style={styles.statItem}>
+                <Text style={styles.statLabel}>Brokers added</Text>
+                <Text style={styles.statValue}>2</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statLabel}>Csv file added</Text>
+                <Text style={styles.statValue}>5</Text>
+              </View>
+            </View>
+          </View>
         </View>
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>Paper Trades</Text>
             <TouchableOpacity style={styles.dropdownSmall}>
               <Text style={styles.dropdownTextSmall}>Weekly</Text>
-              <MaterialIcons name="arrow-drop-down" size={16} color="#fff" />
+              <MaterialIcons name="arrow-drop-down" size={12} color="#555151" />
             </TouchableOpacity>
           </View>
-          <Text style={styles.journalText}>Available balance <Text style={{ fontWeight: 'bold' }}>2,00,000</Text></Text>
-          <Text style={styles.journalText}>Current value <Text style={{ fontWeight: 'bold' }}>2,00,000</Text></Text>
-          <Text style={styles.journalText}>Invested value <Text style={{ fontWeight: 'bold' }}>2,00,000</Text></Text>
+          <View style={styles.statsContainer}>
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Available balance</Text>
+              <Text style={styles.statValue}>2,00,000</Text>
+            </View>
+            <View style={styles.subStatsRow}>
+              <View style={styles.statItem}>
+                <Text style={styles.statLabel}>Current value</Text>
+                <Text style={styles.statValue}>2,00,000</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statLabel}>Invested value</Text>
+                <Text style={styles.statValue}>2,00,000</Text>
+              </View>
+            </View>
+          </View>
         </View>
       </View>
 
       {/* Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          <Text style={{ fontWeight: 'bold' }}>Learning</Text> is a <Text style={{ fontWeight: 'bold' }}>lifelong</Text> process <Text style={styles.heart}>♥</Text>
+          <Text style={styles.footerBold}>Learning </Text> <Text style={{ color: '#aaaaaa', fontSize: 40 }}>is a</Text>{'\n'}
+          <Text style={styles.footerBold}>lifelong</Text> <Text style={{ color: '#aaaaaa', fontSize: 40 }}>process</Text> <Text style={styles.heart}>♥</Text>
         </Text>
       </View>
     </ScrollView>
@@ -200,6 +291,76 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 20,
   },
+  row1: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    // paddingHorizontal: 16,
+    marginBottom: 16,
+    gap: 16,
+  },
+  card1: {
+    backgroundColor: '#232823',
+    borderRadius: 12,
+    padding: 16,
+    width: (width - 48) / 2,
+    alignItems: 'center',
+  },
+  cardHeader1: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 12,
+  },
+  cardTitle1: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  dropdown1: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#dafe96',
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  dropdownText1: {
+    color: '#555151',
+    fontSize: 12,
+    fontWeight: '600',
+    marginRight: 2,
+  },
+  gaugeContainer: {
+    marginVertical: 8,
+  },
+  percentText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  legendRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginTop: -28,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 4,
+  },
+  legendText: {
+    color: '#aaa',
+    fontSize: 12,
+  },
+
   avatar: {
     width: 36,
     height: 36,
@@ -257,7 +418,7 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     backgroundColor: '#DAFE96',
-    borderRadius: 16,
+    borderRadius: 4,
     paddingHorizontal: 12,
     paddingVertical: 4,
     flexDirection: 'row',
@@ -378,9 +539,10 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   card: {
-    backgroundColor: '#232823',
-    borderRadius: 12,
-    padding: 14,
+    backgroundColor: '#222222',
+    borderRadius: 4,
+    padding: 10,
+    paddingHorizontal: 4,
     width: (width - 48) / 2,
     minHeight: 110,
     justifyContent: 'space-between',
@@ -394,20 +556,20 @@ const styles = StyleSheet.create({
   cardTitle: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 15,
+    fontSize: 13,
   },
   dropdownSmall: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#222',
-    borderRadius: 8,
+    backgroundColor: '#dafe96',
+    borderRadius: 4,
     paddingHorizontal: 6,
     paddingVertical: 1,
   },
   dropdownTextSmall: {
-    color: '#fff',
-    fontSize: 12,
-    marginRight: 2,
+    color: '#555151',
+    fontSize: 11,
+    marginRight: -2,
   },
   gaugeRow: {
     flexDirection: 'row',
@@ -423,26 +585,55 @@ const styles = StyleSheet.create({
     color: '#aaa',
     fontSize: 12,
   },
-  journalText: {
+  statsContainer: {
+    gap: 8,
+  },
+  statRow: {
+    backgroundColor: '#32332F',
+    borderRadius: 4,
+    padding: 3,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  subStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  statItem: {
+    flex: 1,
+    backgroundColor: '#32332F',
+    borderRadius: 4,
+    padding: 3,
+  },
+  statLabel: {
     color: '#fff',
-    fontSize: 13,
-    marginBottom: 2,
+    fontSize: 11,
+  },
+  statValue: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: 'bold',
   },
   footer: {
     marginTop: 24,
-    alignItems: 'center',
+    marginLeft: 10,
+    // alignItems: 'center',
   },
   footerText: {
     color: '#fff',
     fontSize: 22,
-    fontWeight: '400',
-    letterSpacing: 0.2,
+    lineHeight: 55,
+  },
+  footerBold: {
+    fontWeight: 'bold',
+    color: '#fff',
+    fontSize: 45,
   },
   heart: {
     color: '#ff4136',
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 30,
   },
 });
 
-export default App;

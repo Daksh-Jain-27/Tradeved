@@ -242,7 +242,7 @@ const SocialHub: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8fafc", padding: 16 },
+  container: { flex: 1, backgroundColor: "#242620", padding: 16 },
   headerWrap: { alignItems: "center", marginBottom: 12 },
   headerTitle: { fontSize: 22, fontWeight: "bold" },
   headerSubtitle: { color: "#64748b", fontSize: 14 },

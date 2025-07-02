@@ -14,7 +14,7 @@ import QuizNavBar from "../../../components/QuizNavBar";
 import { Stack, useRouter } from 'expo-router';
 
 const colors = {
-  background: "#0b1120",
+  background: "#242620",
   foreground: "#f8fafc",
   card: "rgba(30, 41, 59, 0.5)",
   "muted-foreground": "#94a3b8",

@@ -1,7 +1,7 @@
-import { CommunityBulletin } from "@/components/ui/CommunityBulletin";
-import { PowerUpProgress } from "@/components/ui/PowerUpProgress";
-import { ProfileCustomization } from "@/components/ui/ProfileCustomization";
-import { ReferralSystem } from "@/components/ui/ReferralSystem";
+import { CommunityBulletin } from "../../components/ui/CommunityBulletin";
+import { PowerUpProgress } from "../../components/ui/PowerUpProgress";
+import { ProfileCustomization } from "../../components/ui/ProfileCustomization";
+import { ReferralSystem } from "../../components/ui/ReferralSystem";
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
@@ -12,7 +12,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  // fuck u
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -182,7 +181,7 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#111827' },
+  safeArea: { flex: 1, backgroundColor: '#242620' },
   container: { flex: 1, paddingHorizontal: 16 },
   infoText: { color: '#D1D5DB', fontSize: 16 },
   signInButton: { backgroundColor: '#A3E635', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8, marginTop: 16 },

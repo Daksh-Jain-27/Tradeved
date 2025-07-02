@@ -16,7 +16,7 @@ import { Stack, useRouter } from 'expo-router';
 
 // APPROXIMATED COLORS - These were likely defined in the web project's tailwind.config.ts
 const colors = {
-    background: "#0d1117", // Dark background
+    background: "#242620", // Dark background
     foreground: "#c9d1d9", // Light text
     "muted-foreground": "#8b949e", // Grayish text
     card: "rgba(34, 41, 54, 0.7)", // Semi-transparent card background

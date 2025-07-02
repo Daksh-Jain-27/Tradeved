@@ -1,11 +1,8 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Alert, Image, Text, View } from 'react-native';
-
-import { HapticTab } from '@/components/HapticTab';
-// import { IconSymbol } from '@/components/ui/IconSymbol';
-// import TabBarBackground from '@/components/ui/TabBarBackground';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { HapticTab } from '../../components/HapticTab';
+import { useColorScheme } from '../../hooks/useColorScheme';
 
 type TabName = 'Home' | 'Quest' | 'Quiz' | 'PaperTrading' | 'Journal';
 
@@ -57,11 +54,11 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={({ route }) => ({
-        tabBarActiveTintColor: '#C6FF00',
-        tabBarInactiveTintColor: '#fff',
+        tabBarActiveTintColor: '#2eb086',
+        tabBarInactiveTintColor: '#888',
         headerShown: false,
         tabBarButton: (props) => <CustomTabBarButton {...props} routeName={route.name} />, // Use custom button
-        tabBarStyle: { backgroundColor: '#33362E', borderTopWidth: 0, height: 80, paddingTop: 16, },
+        tabBarStyle: { backgroundColor: '#232823', borderTopWidth: 0, height: 80, paddingTop: 16, },
         tabBarShowLabel: false,
         tabBarIcon: ({ focused }) => {
           const locked = ['PaperTrading', ].includes(route.name);

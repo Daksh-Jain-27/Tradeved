@@ -119,7 +119,7 @@ const DuelLobby: React.FC = () => {
                     setOpen={setTopicDropdownOpen}
                     setValue={setTopic}
                     containerStyle={{ marginBottom: 8, zIndex: 1000 }}
-                    style={{ backgroundColor: '#f1f5f9', borderRadius: 8, borderColor: '#e5e7eb' }}
+                    style={{ backgroundColor: '#242620', borderRadius: 8, borderColor: '#e5e7eb' }}
                     dropDownContainerStyle={{ borderColor: '#e5e7eb', zIndex: 2000 }}
                     textStyle={{ color: '#222', fontWeight: 'bold', fontSize: 15 }}
                   />

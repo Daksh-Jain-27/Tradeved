@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
+
 import {
     Animated,
     Dimensions,
@@ -13,6 +14,7 @@ import {
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
+
 
 const slides = [
     {
@@ -39,6 +41,7 @@ export default function Onboarding() {
     const router = useRouter();
     const [currentIndex, setCurrentIndex] = useState(0);
     const scrollX = React.useRef(new Animated.Value(0)).current;
+    
 
     const viewableItemsChanged = React.useRef(({ viewableItems }: any) => {
         if (viewableItems[0]) {
@@ -69,7 +72,7 @@ export default function Onboarding() {
     };
 
     const handleGetStarted = () => {
-        router.push('/(tabs)/Quest');
+        router.push('/(tabs)/Home');
     };
 
     return (

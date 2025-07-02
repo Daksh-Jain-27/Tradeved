@@ -7,9 +7,9 @@ const NAV_ITEMS = [
   { label: "Home", icon: <Feather name="home" size={24} />, route: "/(tabs)/Quiz" },
   { label: "Games", icon: <FontAwesome5 name="gamepad" size={22} />, route: "/quiz-pages/games-hub" },
   { label: "Practice", icon: <Feather name="book-open" size={24} />, route: "/quiz-pages/PracticeHub" },
-  { label: "Compete", icon: <FontAwesome5 name="award" size={22} />, route: "/quiz-pages/competition-hub" },
+  // { label: "Compete", icon: <FontAwesome5 name="award" size={22} />, route: "/quiz-pages/competition-hub" },
   { label: "Social", icon: <Feather name="users" size={24} />, route: "/quiz-pages/social-hub" },
-  { label: "Profile", icon: <Feather name="user" size={24} />, route: "/quiz-pages/profile-screen" },
+  // { label: "Profile", icon: <Feather name="user" size={24} />, route: "/quiz-pages/profile-screen" },
 ];
 
 export default function QuizNavBar() {
@@ -43,7 +43,7 @@ export default function QuizNavBar() {
 
 const styles = StyleSheet.create({
   navbar: {
-    backgroundColor: "#0f172a",
+    backgroundColor: "#242620",
     paddingTop: 40,
     paddingBottom: 4,
     borderBottomWidth: 1,

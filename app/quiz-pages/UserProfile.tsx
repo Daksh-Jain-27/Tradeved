@@ -286,7 +286,7 @@ export default function UserProfile({ userId }: UserProfileProps) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#111827' },
+  safeArea: { flex: 1, backgroundColor: '#242620' },
   container: { flex: 1, paddingHorizontal: 16, paddingTop: 24, },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, },
   iconButton: { padding: 8, },

@@ -202,7 +202,7 @@ const LearningHub: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8fafc", padding: 16 },
+  container: { flex: 1, backgroundColor: "#242620", padding: 16 },
   headerTitle: { fontSize: 22, fontWeight: "bold", marginBottom: 4 },
   headerSubtitle: { color: "#64748b", fontSize: 14, marginBottom: 8 },
   sectionTitle: { fontWeight: "bold", fontSize: 16 },

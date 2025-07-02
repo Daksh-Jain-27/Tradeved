@@ -78,7 +78,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ userId }) => {
       />
       <QuizNavBar />
       <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: "#f8fafc" }}
+        style={{ flex: 1, backgroundColor: "#242620" }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={styles.container}>

@@ -20,7 +20,7 @@ const colors = {
   "royal-red": "#CC0066",
   "royal-red-foreground": "#FFFFFF",
   "brilliant-azure": "#2FBEFF",
-  background: "#0f172a", // Assuming a dark background
+  background: "#242620", // Assuming a dark background
   foreground: "#f8fafc",
   "muted-foreground": "#94a3b8",
   border: "#334155",
