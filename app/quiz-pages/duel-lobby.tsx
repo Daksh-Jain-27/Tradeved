@@ -1,14 +1,15 @@
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter } from 'expo-router';
 import React, { useState } from "react";
 import {
-    Alert,
-    FlatList,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  FlatList,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 import DropDownPicker from 'react-native-dropdown-picker';
 import QuizNavBar from "../../components/QuizNavBar";
@@ -78,40 +79,43 @@ const DuelLobby: React.FC = () => {
         keyExtractor={() => 'duel-lobby-content'}
         renderItem={() => (
           <>
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.headerTitle}>Duel Setup</Text>
-            <Text style={styles.headerSubtitle}>Configure your battle</Text>
-          </View>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.cancelText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.cardGreen}>
-          {/* Duration Selection */}
-          <Text style={styles.sectionTitle}>Time Limit</Text>
-          <View style={styles.tabsRow}>
-            {[
-              { label: "1", value: "1min" },
-              { label: "2", value: "2min" },
-              { label: "5", value: "5min" },
-            ].map((tab) => (
-              <TouchableOpacity
-                key={tab.value}
-                style={[styles.tabButton, duration === tab.value && styles.tabButtonActive]}
-                onPress={() => setDuration(tab.value)}
-              >
-                <Text style={[styles.tabButtonText, duration === tab.value && styles.tabButtonTextActive]}>{tab.label}</Text>
-                <Text style={styles.tabButtonSub}>min</Text>
+            <View style={styles.headerRow}>
+              <View>
+                <Text style={styles.headerTitle}>Duel Setup</Text>
+                <Text style={styles.headerSubtitle}>Configure your battle</Text>
+              </View>
+              <TouchableOpacity onPress={() => router.back()}>
+                <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-            ))}
-          </View>
+            </View>
 
-          {/* Topic & Difficulty */}
-          <View style={styles.selectRow}>
-            <View style={styles.selectBox}>
-              <Text style={styles.selectLabel}>Topic</Text>
+            <LinearGradient
+              colors={['rgba(163, 230, 53, 0.1)', 'rgba(56, 189, 248, 0.1)']}
+              style={styles.card}
+            >
+              {/* Duration Selection */}
+              <Text style={styles.sectionTitle}>Time Limit</Text>
+              <View style={styles.tabsRow}>
+                {[
+                  { label: "1", value: "1min" },
+                  { label: "2", value: "2min" },
+                  { label: "5", value: "5min" },
+                ].map((tab) => (
+                  <TouchableOpacity
+                    key={tab.value}
+                    style={[styles.tabButton, duration === tab.value && styles.tabButtonActive]}
+                    onPress={() => setDuration(tab.value)}
+                  >
+                    <Text style={[styles.tabButtonText, duration === tab.value && styles.tabButtonTextActive]}>{tab.label}</Text>
+                    <Text style={styles.tabButtonSub}>min</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Topic & Difficulty */}
+              <View style={styles.selectRow}>
+                <View style={styles.selectBox}>
+                  <Text style={styles.selectLabel}>Topic</Text>
                   <DropDownPicker
                     open={topicDropdownOpen}
                     value={topic}
@@ -119,13 +123,13 @@ const DuelLobby: React.FC = () => {
                     setOpen={setTopicDropdownOpen}
                     setValue={setTopic}
                     containerStyle={{ marginBottom: 8, zIndex: 1000 }}
-                    style={{ backgroundColor: '#242620', borderRadius: 8, borderColor: '#e5e7eb' }}
-                    dropDownContainerStyle={{ borderColor: '#e5e7eb', zIndex: 2000 }}
-                    textStyle={{ color: '#222', fontWeight: 'bold', fontSize: 15 }}
+                    style={styles.dropdownStyle}
+                    dropDownContainerStyle={styles.dropdownContainerStyle}
+                    textStyle={styles.dropdownTextStyle}
                   />
-            </View>
-            <View style={styles.selectBox}>
-              <Text style={styles.selectLabel}>Difficulty</Text>
+                </View>
+                <View style={styles.selectBox}>
+                  <Text style={styles.selectLabel}>Difficulty</Text>
                   <DropDownPicker
                     open={difficultyDropdownOpen}
                     value={difficulty}
@@ -133,123 +137,124 @@ const DuelLobby: React.FC = () => {
                     setOpen={setDifficultyDropdownOpen}
                     setValue={setDifficulty}
                     containerStyle={{ marginBottom: 8, zIndex: 999 }}
-                    style={{ backgroundColor: '#f1f5f9', borderRadius: 8, borderColor: '#e5e7eb' }}
-                    dropDownContainerStyle={{ borderColor: '#e5e7eb', zIndex: 1999 }}
-                    textStyle={{ color: '#222', fontWeight: 'bold', fontSize: 15 }}
+                    style={styles.dropdownStyle}
+                    dropDownContainerStyle={styles.dropdownContainerStyle}
+                    textStyle={styles.dropdownTextStyle}
                   />
-            </View>
-          </View>
+                </View>
+              </View>
 
-          {/* Opponent Type */}
-          <Text style={styles.sectionTitle}>Choose Opponent</Text>
-          <View style={styles.tabsRow}>
-            {[
-              { label: "Random", value: "random", icon: "users" },
-              { label: "Friend", value: "friend", icon: "share-2" },
-              { label: "Bot", value: "bot", icon: "cpu" },
-            ].map((tab) => (
-              <TouchableOpacity
-                key={tab.value}
-                style={[styles.tabButton, duelMode === tab.value && styles.tabButtonActive]}
-                onPress={() => setDuelMode(tab.value)}
-              >
-                <Feather name={tab.icon as any} size={20} color={duelMode === tab.value ? "#22c55e" : "#64748b"} />
-                <Text style={[styles.tabButtonText, duelMode === tab.value && styles.tabButtonTextActive]}>{tab.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+              {/* Opponent Type */}
+              <Text style={styles.sectionTitle}>Choose Opponent</Text>
+              <View style={styles.tabsRow}>
+                {[
+                  { label: "Random", value: "random", icon: "users" },
+                  { label: "Friend", value: "friend", icon: "share-2" },
+                  { label: "Bot", value: "bot", icon: "cpu" },
+                ].map((tab) => (
+                  <TouchableOpacity
+                    key={tab.value}
+                    style={[styles.tabButton, duelMode === tab.value && styles.tabButtonActive]}
+                    onPress={() => setDuelMode(tab.value)}
+                  >
+                    <Feather name={tab.icon as any} size={20} color={duelMode === tab.value ? "#A3E635" : "#94a3b8"} />
+                    <Text style={[styles.tabButtonText, duelMode === tab.value && styles.tabButtonTextActive]}>{tab.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
-          {/* Friend Selection */}
-          {duelMode === "friend" && (
-            <View style={styles.friendSection}>
-              <TextInput
-                style={styles.friendSearch}
-                placeholder="Search friends..."
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-              />
-              <View style={styles.friendList}>
-                {filteredFriends.length > 0 ? (
-                  filteredFriends.map((friend) => (
-                    <TouchableOpacity
-                      key={friend.id}
-                      style={[
-                        styles.friendRow,
-                        selectedFriend === friend.id && styles.friendRowActive,
-                      ]}
-                      onPress={() => setSelectedFriend(friend.id)}
-                    >
-                      <View style={styles.friendAvatar}>
-                        <Feather name="user" size={22} color="#64748b" />
-                        <View
+              {/* Friend Selection */}
+              {duelMode === "friend" && (
+                <View style={styles.friendSection}>
+                  <TextInput
+                    style={styles.friendSearch}
+                    placeholder="Search friends..."
+                    placeholderTextColor="#94a3b8"
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                  />
+                  <View style={styles.friendList}>
+                    {filteredFriends.length > 0 ? (
+                      filteredFriends.map((friend) => (
+                        <TouchableOpacity
+                          key={friend.id}
                           style={[
-                            styles.friendStatusDot,
-                            { backgroundColor: friend.online ? "#22c55e" : "#e5e7eb" },
+                            styles.friendRow,
+                            selectedFriend === friend.id && styles.friendRowActive,
                           ]}
-                        />
+                          onPress={() => setSelectedFriend(friend.id)}
+                        >
+                          <View style={styles.friendAvatar}>
+                            <Feather name="user" size={22} color="#94a3b8" />
+                            <View
+                              style={[
+                                styles.friendStatusDot,
+                                { backgroundColor: friend.online ? "#A3E635" : "#94a3b8" },
+                              ]}
+                            />
+                          </View>
+                          <View>
+                            <Text style={styles.friendName}>{friend.name}</Text>
+                            <Text style={styles.friendStatus}>{friend.online ? "Online" : "Offline"}</Text>
+                          </View>
+                        </TouchableOpacity>
+                      ))
+                    ) : (
+                      <View style={styles.noFriendsBox}>
+                        <Text style={styles.noFriendsText}>No friends found</Text>
+                        <TouchableOpacity onPress={() => Alert.alert("Add Friends")}>
+                          <Feather name="user-plus" size={16} color="#A3E635" style={{ marginRight: 4 }} />
+                          <Text style={styles.addFriendText}>Add Friends</Text>
+                        </TouchableOpacity>
                       </View>
-                      <View>
-                        <Text style={styles.friendName}>{friend.name}</Text>
-                        <Text style={styles.friendStatus}>{friend.online ? "Online" : "Offline"}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))
-                ) : (
-                  <View style={styles.noFriendsBox}>
-                    <Text style={styles.noFriendsText}>No friends found</Text>
-                    <TouchableOpacity onPress={() => Alert.alert("Add Friends")}>
-                      <Feather name="user-plus" size={16} color="#22c55e" style={{ marginRight: 4 }} />
-                      <Text style={styles.addFriendText}>Add Friends</Text>
-                    </TouchableOpacity>
+                    )}
                   </View>
-                )}
-              </View>
-              <TouchableOpacity
-                style={styles.groupRoomButton}
-                onPress={handleCreateRoom}
-              >
-                <Feather name="users" size={18} color="#22c55e" style={{ marginRight: 8 }} />
-                <Text style={styles.groupRoomButtonText}>Create Group Room (Up to 10 Players)</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+                  <TouchableOpacity
+                    style={styles.groupRoomButton}
+                    onPress={handleCreateRoom}
+                  >
+                    <Feather name="users" size={18} color="#A3E635" style={{ marginRight: 8 }} />
+                    <Text style={styles.groupRoomButtonText}>Create Group Room (Up to 10 Players)</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
 
-          {/* Power-ups Preview */}
-          <View style={styles.powerupsBox}>
-            <Text style={styles.powerupsTitle}>Available Power-ups</Text>
-            <View style={styles.powerupsRow}>
-              <View style={[styles.powerupBadge, { borderColor: "#eab308", backgroundColor: "#fef9c3" }]}>
-                <Feather name="zap" size={14} color="#eab308" style={{ marginRight: 4 }} />
-                <Text style={[styles.powerupText, { color: "#eab308" }]}>Hint (2)</Text>
+              {/* Power-ups Preview */}
+              <View style={styles.powerupsBox}>
+                <Text style={styles.powerupsTitle}>Available Power-ups</Text>
+                <View style={styles.powerupsRow}>
+                  <View style={[styles.powerupBadge, { borderColor: "rgba(234, 179, 8, 0.2)" }]}>
+                    <Feather name="zap" size={14} color="#fde047" style={{ marginRight: 4 }} />
+                    <Text style={[styles.powerupText, { color: "#fde047" }]}>Hint (2)</Text>
+                  </View>
+                  <View style={[styles.powerupBadge, { borderColor: "rgba(56, 189, 248, 0.2)" }]}>
+                    <Feather name="arrow-right" size={14} color="#38bdf8" style={{ marginRight: 4 }} />
+                    <Text style={[styles.powerupText, { color: "#38bdf8" }]}>Skip (1)</Text>
+                  </View>
+                  <View style={[styles.powerupBadge, { borderColor: "rgba(239, 68, 68, 0.2)" }]}>
+                    <Feather name="zap" size={14} color="#ef4444" style={{ marginRight: 4 }} />
+                    <Text style={[styles.powerupText, { color: "#ef4444" }]}>2x XP (1)</Text>
+                  </View>
+                </View>
               </View>
-              <View style={[styles.powerupBadge, { borderColor: "#38bdf8", backgroundColor: "#e0f2fe" }]}>
-                <Feather name="arrow-right" size={14} color="#38bdf8" style={{ marginRight: 4 }} />
-                <Text style={[styles.powerupText, { color: "#38bdf8" }]}>Skip (1)</Text>
-              </View>
-              <View style={[styles.powerupBadge, { borderColor: "#ef4444", backgroundColor: "#fee2e2" }]}>
-                <Feather name="zap" size={14} color="#ef4444" style={{ marginRight: 4 }} />
-                <Text style={[styles.powerupText, { color: "#ef4444" }]}>2x XP (1)</Text>
-              </View>
-            </View>
-          </View>
 
-          {/* Start Button or Matching */}
-          {isMatching ? (
-            <View style={styles.matchingBox}>
-              <Feather name="loader" size={32} color="#22c55e" style={{ marginBottom: 8 }} />
-              <Text style={styles.matchingText}>Matching...</Text>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={[styles.startButton, duelMode === "friend" && !selectedFriend && { opacity: 0.5 }]}
-              onPress={handleStartDuel}
-              disabled={duelMode === "friend" && !selectedFriend}
-            >
-              <Feather name="zap" size={20} color="#fff" style={{ marginRight: 8 }} />
-              <Text style={styles.startButtonText}>Start Battle</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+              {/* Start Button or Matching */}
+              {isMatching ? (
+                <View style={styles.matchingBox}>
+                  <Feather name="loader" size={32} color="#A3E635" style={{ marginBottom: 8 }} />
+                  <Text style={styles.matchingText}>Matching...</Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.startButton, duelMode === "friend" && !selectedFriend && { opacity: 0.5 }]}
+                  onPress={handleStartDuel}
+                  disabled={duelMode === "friend" && !selectedFriend}
+                >
+                  <Feather name="zap" size={20} color="#000" style={{ marginRight: 8 }} />
+                  <Text style={styles.startButtonText}>Start Battle</Text>
+                </TouchableOpacity>
+              )}
+            </LinearGradient>
           </>
         )}
       />
@@ -258,84 +263,235 @@ const DuelLobby: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8fafc", padding: 16 },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
-  headerTitle: { fontSize: 22, fontWeight: "bold" },
-  headerSubtitle: { color: "#64748b", fontSize: 14 },
-  cancelText: { color: "#64748b", fontSize: 15 },
-  cardGreen: {
-    backgroundColor: "#bbf7d0",
+  container: { 
+    flex: 1, 
+    backgroundColor: "#242620", 
+    padding: 16 
+  },
+  headerRow: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    alignItems: "center", 
+    marginBottom: 16 
+  },
+  headerTitle: { 
+    fontSize: 22, 
+    fontWeight: "bold",
+    color: "#fff"
+  },
+  headerSubtitle: { 
+    color: "#94a3b8", 
+    fontSize: 14 
+  },
+  cancelText: { 
+    color: "#94a3b8", 
+    fontSize: 15 
+  },
+  card: {
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "rgba(163, 230, 53, 0.2)"
   },
-  sectionTitle: { fontWeight: "bold", fontSize: 16, marginBottom: 8 },
-  tabsRow: { flexDirection: "row", marginBottom: 12, marginTop: 4 },
+  sectionTitle: { 
+    fontWeight: "bold", 
+    fontSize: 16, 
+    marginBottom: 8,
+    color: "#fff"
+  },
+  tabsRow: { 
+    flexDirection: "row", 
+    marginBottom: 12, 
+    marginTop: 4,
+    gap: 8
+  },
   tabButton: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 10,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
     borderRadius: 8,
-    marginHorizontal: 2,
+    borderWidth: 1,
+    borderColor: "rgba(163, 230, 53, 0.2)"
   },
-  tabButtonActive: { backgroundColor: "#22c55e" },
-  tabButtonText: { color: "#64748b", fontWeight: "500" },
-  tabButtonTextActive: { color: "#fff" },
-  tabButtonSub: { color: "#64748b", fontSize: 12 },
-  selectRow: { flexDirection: "row", marginBottom: 12 },
-  selectBox: { flex: 1, marginHorizontal: 4 },
-  selectLabel: { color: "#64748b", fontSize: 13, marginBottom: 4 },
-  friendSection: { marginBottom: 12 },
+  tabButtonActive: { 
+    backgroundColor: "rgba(163, 230, 53, 0.1)" 
+  },
+  tabButtonText: { 
+    color: "#94a3b8", 
+    fontWeight: "500" 
+  },
+  tabButtonTextActive: { 
+    color: "#A3E635" 
+  },
+  tabButtonSub: { 
+    color: "#94a3b8", 
+    fontSize: 12 
+  },
+  selectRow: { 
+    flexDirection: "row", 
+    marginBottom: 12,
+    gap: 8
+  },
+  selectBox: { 
+    flex: 1
+  },
+  selectLabel: { 
+    color: "#94a3b8", 
+    fontSize: 13, 
+    marginBottom: 4 
+  },
+  dropdownStyle: {
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    borderRadius: 8,
+    borderColor: "rgba(163, 230, 53, 0.2)"
+  },
+  dropdownContainerStyle: {
+    backgroundColor: "#242620",
+    borderColor: "rgba(163, 230, 53, 0.2)",
+    borderRadius: 8
+  },
+  dropdownTextStyle: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 15
+  },
+  friendSection: { 
+    marginBottom: 12 
+  },
   friendSearch: {
-    backgroundColor: "#f1f5f9",
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
     borderRadius: 8,
     padding: 10,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: "rgba(163, 230, 53, 0.2)",
     fontSize: 15,
+    color: "#fff"
   },
-  friendList: { maxHeight: 180, marginBottom: 8 },
+  friendList: { 
+    maxHeight: 180, 
+    marginBottom: 8 
+  },
   friendRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f1f5f9",
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
     borderRadius: 8,
     padding: 10,
     marginBottom: 6,
+    borderWidth: 1,
+    borderColor: "rgba(163, 230, 53, 0.2)"
   },
-  friendRowActive: { backgroundColor: "#bbf7d0", borderWidth: 1, borderColor: "#22c55e" },
-  friendAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#e5e7eb", alignItems: "center", justifyContent: "center", marginRight: 10, position: "relative" },
-  friendStatusDot: { position: "absolute", bottom: 4, right: 4, width: 8, height: 8, borderRadius: 4 },
-  friendName: { fontWeight: "bold", fontSize: 14 },
-  friendStatus: { color: "#64748b", fontSize: 12 },
-  noFriendsBox: { alignItems: "center", padding: 12 },
-  noFriendsText: { color: "#64748b", fontSize: 14, marginBottom: 4 },
-  addFriendText: { color: "#22c55e", fontWeight: "bold", fontSize: 14 },
+  friendRowActive: { 
+    backgroundColor: "rgba(163, 230, 53, 0.1)", 
+    borderColor: "#A3E635" 
+  },
+  friendAvatar: { 
+    width: 36, 
+    height: 36, 
+    borderRadius: 18, 
+    backgroundColor: "rgba(0, 0, 0, 0.2)", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    marginRight: 10, 
+    position: "relative" 
+  },
+  friendStatusDot: { 
+    position: "absolute", 
+    bottom: 4, 
+    right: 4, 
+    width: 8, 
+    height: 8, 
+    borderRadius: 4 
+  },
+  friendName: { 
+    fontWeight: "bold", 
+    fontSize: 14,
+    color: "#fff"
+  },
+  friendStatus: { 
+    color: "#94a3b8", 
+    fontSize: 12 
+  },
+  noFriendsBox: { 
+    alignItems: "center", 
+    padding: 12 
+  },
+  noFriendsText: { 
+    color: "#94a3b8", 
+    fontSize: 14, 
+    marginBottom: 4 
+  },
+  addFriendText: { 
+    color: "#A3E635", 
+    fontWeight: "bold", 
+    fontSize: 14 
+  },
   groupRoomButton: {
     flexDirection: "row",
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
     borderWidth: 1,
-    borderColor: "#22c55e",
+    borderColor: "rgba(163, 230, 53, 0.2)",
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 12,
     marginTop: 8,
   },
-  groupRoomButtonText: { color: "#22c55e", fontWeight: "bold", fontSize: 15 },
-  powerupsBox: { backgroundColor: "#f1f5f9", borderRadius: 10, padding: 12, marginBottom: 12 },
-  powerupsTitle: { fontWeight: "bold", fontSize: 14, marginBottom: 6 },
-  powerupsRow: { flexDirection: "row", justifyContent: "space-between" },
-  powerupBadge: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10, marginRight: 6 },
-  powerupText: { fontWeight: "bold", fontSize: 13 },
-  matchingBox: { alignItems: "center", justifyContent: "center", padding: 24 },
-  matchingText: { color: "#22c55e", fontWeight: "bold", fontSize: 16, marginTop: 8 },
+  groupRoomButtonText: { 
+    color: "#A3E635", 
+    fontWeight: "bold", 
+    fontSize: 15 
+  },
+  powerupsBox: { 
+    backgroundColor: "rgba(0, 0, 0, 0.2)", 
+    borderRadius: 10, 
+    padding: 12, 
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(163, 230, 53, 0.2)"
+  },
+  powerupsTitle: { 
+    fontWeight: "bold", 
+    fontSize: 14, 
+    marginBottom: 6,
+    color: "#fff"
+  },
+  powerupsRow: { 
+    flexDirection: "row", 
+    justifyContent: "space-between" 
+  },
+  powerupBadge: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    borderWidth: 1, 
+    borderRadius: 8, 
+    paddingVertical: 6, 
+    paddingHorizontal: 10, 
+    marginRight: 6,
+    backgroundColor: "rgba(0, 0, 0, 0.2)"
+  },
+  powerupText: { 
+    fontWeight: "bold", 
+    fontSize: 13 
+  },
+  matchingBox: { 
+    alignItems: "center", 
+    justifyContent: "center", 
+    padding: 24 
+  },
+  matchingText: { 
+    color: "#A3E635", 
+    fontWeight: "bold", 
+    fontSize: 16, 
+    marginTop: 8 
+  },
   startButton: {
     flexDirection: "row",
-    backgroundColor: "#22c55e",
+    backgroundColor: "#9bec00",
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
@@ -343,7 +499,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 4,
   },
-  startButtonText: { color: "#fff", fontWeight: "bold", fontSize: 18 },
+  startButtonText: { 
+    color: "#000", 
+    fontWeight: "bold", 
+    fontSize: 18 
+  },
 });
 
 export default DuelLobby; 

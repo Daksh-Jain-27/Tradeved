@@ -1,15 +1,16 @@
+import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from 'expo-linear-gradient';
+import { Stack, useRouter } from 'expo-router';
 import React from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
   Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import QuizNavBar from "../../components/QuizNavBar";
-import { Stack, useRouter } from 'expo-router';
 
 
 const weakTopics = [
@@ -95,11 +96,15 @@ const LearningHub: React.FC = () => {
         {/* Weak Topics */}
         <View style={{ marginBottom: 24 }}>
           <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
-            <Feather name="alert-triangle" size={18} color="#eab308" style={{ marginRight: 6 }} />
+            <Feather name="alert-triangle" size={18} color="#fde047" style={{ marginRight: 6 }} />
             <Text style={styles.sectionTitle}>Focus Areas</Text>
           </View>
           {weakTopics.map((topic) => (
-            <View key={topic.id} style={styles.topicCard}>
+            <LinearGradient
+              key={topic.id}
+              colors={['rgba(163, 230, 53, 0.1)', 'rgba(56, 189, 248, 0.1)']}
+              style={styles.topicCard}
+            >
               <View style={styles.topicHeaderRow}>
                 <Text style={styles.topicTitle}>{topic.name}</Text>
                 <View style={{ alignItems: "flex-end" }}>
@@ -120,7 +125,7 @@ const LearningHub: React.FC = () => {
                   onPress={() => Alert.alert("Open Resource", resource.title)}
                 >
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Feather name={resource.icon as any} size={16} color="#22c55e" style={{ marginRight: 8 }} />
+                    <Feather name={resource.icon as any} size={16} color="#A3E635" style={{ marginRight: 8 }} />
                     <Text style={styles.resourceText}>{resource.title}</Text>
                   </View>
                   <View style={styles.badgeOutline}>
@@ -132,14 +137,17 @@ const LearningHub: React.FC = () => {
                 style={styles.masterButton}
                 onPress={() => router.push('/(tabs)/Quest')}
               >
-                <Feather name="target" size={16} color="#fff" style={{ marginRight: 6 }} />
+                <Feather name="target" size={16} color="#000" style={{ marginRight: 6 }} />
                 <Text style={styles.masterButtonText}>Master This Topic</Text>
               </TouchableOpacity>
-            </View>
+            </LinearGradient>
           ))}
         </View>
         {/* Fun Facts */}
-        <View style={styles.cardWhite}>
+        <LinearGradient
+          colors={['rgba(163, 230, 53, 0.1)', 'rgba(56, 189, 248, 0.1)']}
+          style={styles.cardWhite}
+        >
           <View style={styles.cardHeaderRow}>
             <Text style={styles.cardHeaderTitle}>💡 Trading Facts You've Learned</Text>
           </View>
@@ -153,9 +161,12 @@ const LearningHub: React.FC = () => {
               <Text style={styles.funFactText}>{item.fact}</Text>
             </View>
           ))}
-        </View>
+        </LinearGradient>
         {/* Smart Learning Links */}
-        <View style={styles.cardWhite}>
+        <LinearGradient
+          colors={['rgba(163, 230, 53, 0.1)', 'rgba(56, 189, 248, 0.1)']}
+          style={styles.cardWhite}
+        >
           <View style={styles.cardHeaderRow}>
             <Text style={styles.cardHeaderTitle}>Recommended Learning</Text>
           </View>
@@ -175,24 +186,24 @@ const LearningHub: React.FC = () => {
                 <Text style={styles.smartLinkDesc}>{link.description}</Text>
                 <Text style={styles.smartLinkCat}>{link.category}</Text>
               </View>
-              <Feather name="arrow-right" size={18} color="#64748b" />
+              <Feather name="arrow-right" size={18} color="#A3E635" />
             </TouchableOpacity>
           ))}
-        </View>
+        </LinearGradient>
         {/* Quick Actions */}
         <View style={styles.quickActionsRow}>
           <TouchableOpacity
             style={styles.quickActionButton}
             onPress={() => router.push('/(tabs)/Quest')}
           >
-            <Feather name="book-open" size={18} color="#22c55e" style={{ marginRight: 6 }} />
+            <Feather name="book-open" size={18} color="#A3E635" style={{ marginRight: 6 }} />
             <Text style={styles.quickActionText}>Browse Quests</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.quickActionButton}
             onPress={() => router.push('/quiz-pages/duel-lobby')}
           >
-            <Feather name="target" size={18} color="#22c55e" style={{ marginRight: 6 }} />
+            <Feather name="target" size={18} color="#A3E635" style={{ marginRight: 6 }} />
             <Text style={styles.quickActionText}>Practice Duel</Text>
           </TouchableOpacity>
         </View>
@@ -202,37 +213,199 @@ const LearningHub: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#242620", padding: 16 },
-  headerTitle: { fontSize: 22, fontWeight: "bold", marginBottom: 4 },
-  headerSubtitle: { color: "#64748b", fontSize: 14, marginBottom: 8 },
-  sectionTitle: { fontWeight: "bold", fontSize: 16 },
-  topicCard: { backgroundColor: "#fefce8", borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: "#fde68a" },
-  topicHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 },
-  topicTitle: { fontWeight: "bold", fontSize: 15 },
-  topicDesc: { color: "#64748b", fontSize: 13, marginBottom: 8 },
-  resourcesTitle: { fontWeight: "bold", fontSize: 13, marginTop: 8, marginBottom: 4 },
-  resourceRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#fef9c3", padding: 10, borderRadius: 8, marginBottom: 6 },
-  resourceText: { fontSize: 13, fontWeight: "500" },
-  badge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, marginBottom: 2, alignSelf: "flex-end" },
-  badgeYellow: { backgroundColor: "#fef08a" },
-  badgeGreen: { backgroundColor: "#bbf7d0" },
-  badgeText: { color: "#eab308", fontWeight: "bold", fontSize: 12 },
-  badgeTextSmall: { color: "#64748b", fontSize: 11 },
-  badgeOutline: { borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, marginLeft: 4 },
-  masterButton: { flexDirection: "row", alignItems: "center", backgroundColor: "#22c55e", borderRadius: 8, paddingVertical: 12, paddingHorizontal: 16, marginTop: 8, justifyContent: "center" },
-  masterButtonText: { color: "#fff", fontWeight: "bold", fontSize: 15 },
-  cardWhite: { backgroundColor: "#fff", borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: "#e5e7eb" },
-  cardHeaderRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
-  cardHeaderTitle: { fontWeight: "bold", fontSize: 15 },
-  funFactRow: { backgroundColor: "#f1f5f9", borderRadius: 8, padding: 10, marginBottom: 8 },
-  funFactText: { color: "#64748b", fontSize: 13 },
-  smartLinkRow: { flexDirection: "row", alignItems: "center", backgroundColor: "#f1f5f9", borderRadius: 8, padding: 12, marginBottom: 8 },
-  smartLinkTitle: { fontWeight: "bold", fontSize: 14, marginRight: 6 },
-  smartLinkDesc: { color: "#64748b", fontSize: 12 },
-  smartLinkCat: { color: "#22c55e", fontSize: 11, marginTop: 2 },
-  quickActionsRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 8 },
-  quickActionButton: { flex: 1, flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 10, paddingVertical: 12, paddingHorizontal: 10, borderWidth: 1, borderColor: "#e5e7eb", marginRight: 8 },
-  quickActionText: { color: "#22c55e", fontWeight: "bold", fontSize: 15 },
+  container: { 
+    flex: 1, 
+    backgroundColor: "#242620", 
+    padding: 16 
+  },
+  headerTitle: { 
+    fontSize: 22, 
+    fontWeight: "bold", 
+    marginBottom: 4,
+    color: "#fff"
+  },
+  headerSubtitle: { 
+    color: "#94a3b8", 
+    fontSize: 14, 
+    marginBottom: 8 
+  },
+  sectionTitle: { 
+    fontWeight: "bold", 
+    fontSize: 16,
+    color: "#fff"
+  },
+  topicCard: { 
+    borderRadius: 16, 
+    padding: 16, 
+    marginBottom: 16, 
+    borderWidth: 1, 
+    borderColor: "rgba(163, 230, 53, 0.2)" 
+  },
+  topicHeaderRow: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    alignItems: "flex-start", 
+    marginBottom: 4 
+  },
+  topicTitle: { 
+    fontWeight: "bold", 
+    fontSize: 15,
+    color: "#fff"
+  },
+  topicDesc: { 
+    color: "#94a3b8", 
+    fontSize: 13, 
+    marginBottom: 8 
+  },
+  resourcesTitle: { 
+    fontWeight: "bold", 
+    fontSize: 13, 
+    marginTop: 8, 
+    marginBottom: 4,
+    color: "#fff"
+  },
+  resourceRow: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "space-between", 
+    backgroundColor: "rgba(0, 0, 0, 0.2)", 
+    padding: 10, 
+    borderRadius: 8, 
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: "rgba(163, 230, 53, 0.2)"
+  },
+  resourceText: { 
+    fontSize: 13, 
+    fontWeight: "500",
+    color: "#fff"
+  },
+  badge: { 
+    borderRadius: 6, 
+    paddingHorizontal: 8, 
+    paddingVertical: 2, 
+    marginBottom: 2, 
+    alignSelf: "flex-end" 
+  },
+  badgeYellow: { 
+    backgroundColor: "rgba(253, 224, 71, 0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(253, 224, 71, 0.4)"
+  },
+  badgeGreen: { 
+    backgroundColor: "rgba(163, 230, 53, 0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(163, 230, 53, 0.4)"
+  },
+  badgeText: { 
+    color: "#fde047", 
+    fontWeight: "bold", 
+    fontSize: 12 
+  },
+  badgeTextSmall: { 
+    color: "#94a3b8", 
+    fontSize: 11 
+  },
+  badgeOutline: { 
+    borderWidth: 1, 
+    borderColor: "rgba(163, 230, 53, 0.2)", 
+    borderRadius: 6, 
+    paddingHorizontal: 6, 
+    paddingVertical: 2, 
+    marginLeft: 4,
+    backgroundColor: "rgba(0, 0, 0, 0.2)"
+  },
+  masterButton: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    backgroundColor: "#9bec00", 
+    borderRadius: 8, 
+    paddingVertical: 12, 
+    paddingHorizontal: 16, 
+    marginTop: 8, 
+    justifyContent: "center" 
+  },
+  masterButtonText: { 
+    color: "#000", 
+    fontWeight: "bold", 
+    fontSize: 15 
+  },
+  cardWhite: { 
+    borderRadius: 16, 
+    padding: 16, 
+    marginBottom: 16, 
+    borderWidth: 1, 
+    borderColor: "rgba(163, 230, 53, 0.2)" 
+  },
+  cardHeaderRow: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    marginBottom: 8 
+  },
+  cardHeaderTitle: { 
+    fontWeight: "bold", 
+    fontSize: 15,
+    color: "#fff"
+  },
+  funFactRow: { 
+    backgroundColor: "rgba(0, 0, 0, 0.2)", 
+    borderRadius: 8, 
+    padding: 10, 
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "rgba(163, 230, 53, 0.2)"
+  },
+  funFactText: { 
+    color: "#94a3b8", 
+    fontSize: 13 
+  },
+  smartLinkRow: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    backgroundColor: "rgba(0, 0, 0, 0.2)", 
+    borderRadius: 8, 
+    padding: 12, 
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "rgba(163, 230, 53, 0.2)"
+  },
+  smartLinkTitle: { 
+    fontWeight: "bold", 
+    fontSize: 14, 
+    marginRight: 6,
+    color: "#fff"
+  },
+  smartLinkDesc: { 
+    color: "#94a3b8", 
+    fontSize: 12 
+  },
+  smartLinkCat: { 
+    color: "#A3E635", 
+    fontSize: 11, 
+    marginTop: 2 
+  },
+  quickActionsRow: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    marginTop: 8,
+    gap: 8
+  },
+  quickActionButton: { 
+    flex: 1, 
+    flexDirection: "row", 
+    alignItems: "center", 
+    backgroundColor: "rgba(0, 0, 0, 0.2)", 
+    borderRadius: 10, 
+    paddingVertical: 12, 
+    paddingHorizontal: 10, 
+    borderWidth: 1, 
+    borderColor: "rgba(163, 230, 53, 0.2)"
+  },
+  quickActionText: { 
+    color: "#A3E635", 
+    fontWeight: "bold", 
+    fontSize: 15 
+  },
 });
 
 export default LearningHub; 

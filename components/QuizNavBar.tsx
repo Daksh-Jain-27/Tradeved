@@ -18,25 +18,23 @@ export default function QuizNavBar() {
 
   return (
     <View style={styles.navbar}>
-      {[0, 1].map(row => (
-        <View key={row} style={styles.row}>
-          {NAV_ITEMS.slice(row * 3, row * 3 + 3).map(item => {
-            const isActive = pathname === item.route;
-            return (
-              <TouchableOpacity
-                key={item.label}
-                style={styles.item}
-                onPress={() => router.push(item.route as any)}
-              >
-                {React.cloneElement(item.icon, { color: isActive ? "#22c55e" : "#94a3b8" })}
-                <Text style={[styles.label, { color: isActive ? "#22c55e" : "#94a3b8" }]}> 
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      ))}
+      <View style={styles.row}>
+        {NAV_ITEMS.map(item => {
+          const isActive = pathname === item.route;
+          return (
+            <TouchableOpacity
+              key={item.label}
+              style={styles.item}
+              onPress={() => router.push(item.route as any)}
+            >
+              {React.cloneElement(item.icon, { color: isActive ? "#22c55e" : "#94a3b8" })}
+              <Text style={[styles.label, { color: isActive ? "#22c55e" : "#94a3b8" }]}> 
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
   );
 }

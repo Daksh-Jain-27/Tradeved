@@ -1,17 +1,18 @@
+import { Feather, FontAwesome5 } from "@expo/vector-icons";
+import { LinearGradient } from 'expo-linear-gradient';
+import { Stack, useRouter } from 'expo-router';
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  TextInput,
-  Image,
   Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { Feather, FontAwesome5 } from "@expo/vector-icons";
 import QuizNavBar from "../../components/QuizNavBar";
-import { Stack, useRouter } from 'expo-router';
 
 const friends = [
   {
@@ -100,15 +101,15 @@ const SocialHub: React.FC = () => {
             style={[styles.tabBtn, activeTab === "friends" && styles.tabBtnActive]}
             onPress={() => setActiveTab("friends")}
           >
-            <Feather name="users" size={16} color={activeTab === "friends" ? "#fff" : "#2563eb"} style={{ marginRight: 6 }} />
-            <Text style={[styles.tabBtnText, activeTab === "friends" && { color: "#fff" }]}>Friends</Text>
+            <Feather name="users" size={16} color={activeTab === "friends" ? "#A3E635" : "#94a3b8"} style={{ marginRight: 6 }} />
+            <Text style={[styles.tabBtnText, activeTab === "friends" && styles.tabBtnTextActive]}>Friends</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tabBtn, activeTab === "requests" && styles.tabBtnActive]}
             onPress={() => setActiveTab("requests")}
           >
-            <Feather name="user-plus" size={16} color={activeTab === "requests" ? "#fff" : "#2563eb"} style={{ marginRight: 6 }} />
-            <Text style={[styles.tabBtnText, activeTab === "requests" && { color: "#fff" }]}>Requests</Text>
+            <Feather name="user-plus" size={16} color={activeTab === "requests" ? "#A3E635" : "#94a3b8"} style={{ marginRight: 6 }} />
+            <Text style={[styles.tabBtnText, activeTab === "requests" && styles.tabBtnTextActive]}>Requests</Text>
             {friendRequests.length > 0 && (
               <View style={styles.tabBadge}><Text style={styles.tabBadgeText}>{friendRequests.length}</Text></View>
             )}
@@ -119,7 +120,7 @@ const SocialHub: React.FC = () => {
           <View style={{ marginTop: 18 }}>
             {/* Search Bar */}
             <View style={styles.searchRow}>
-              <Feather name="search" size={16} color="#64748b" style={styles.searchIcon} />
+              <Feather name="search" size={16} color="#94a3b8" style={styles.searchIcon} />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search for mathletes"
@@ -130,7 +131,11 @@ const SocialHub: React.FC = () => {
             </View>
             {/* Friends List */}
             {filteredFriends.map((friend, index) => (
-              <View key={friend.id} style={styles.card}>
+              <LinearGradient
+                key={friend.id}
+                colors={['rgba(163, 230, 53, 0.1)', 'rgba(56, 189, 248, 0.1)']}
+                style={styles.card}
+              >
                 <View style={styles.friendRow}>
                   <View style={styles.avatarWrap}>
                     <Image
@@ -164,19 +169,19 @@ const SocialHub: React.FC = () => {
                 </View>
                 <View style={styles.actionRow}>
                   <TouchableOpacity style={styles.secondaryBtn} onPress={() => router.push("/quiz-pages/UserProfile")}>
-                    <Feather name="eye" size={14} color="#2563eb" style={{ marginRight: 4 }} />
+                    <Feather name="eye" size={14} color="#A3E635" style={{ marginRight: 4 }} />
                     <Text style={styles.secondaryBtnText}>View</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.secondaryBtn} onPress={() => router.push("/quiz-pages/chat-screen")}>
-                    <Feather name="message-circle" size={14} color="#2563eb" style={{ marginRight: 4 }} />
+                    <Feather name="message-circle" size={14} color="#A3E635" style={{ marginRight: 4 }} />
                     <Text style={styles.secondaryBtnText}>Chat</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.primaryBtn} onPress={() => router.push('/quiz-pages/duel-lobby')}>
-                    <FontAwesome5 name="shield-alt" size={14} color="#fff" style={{ marginRight: 4 }} />
+                    <FontAwesome5 name="shield-alt" size={14} color="#000" style={{ marginRight: 4 }} />
                     <Text style={styles.primaryBtnText}>Duel</Text>
                   </TouchableOpacity>
                 </View>
-              </View>
+              </LinearGradient>
             ))}
           </View>
         )}
@@ -184,14 +189,21 @@ const SocialHub: React.FC = () => {
         {activeTab === "requests" && (
           <View style={{ marginTop: 18 }}>
             {friendRequests.length === 0 ? (
-              <View style={styles.cardCenter}>
-                <Feather name="user-plus" size={40} color="#64748b" style={{ marginBottom: 12 }} />
+              <LinearGradient
+                colors={['rgba(163, 230, 53, 0.1)', 'rgba(56, 189, 248, 0.1)']}
+                style={styles.cardCenter}
+              >
+                <Feather name="user-plus" size={40} color="#94a3b8" style={{ marginBottom: 12 }} />
                 <Text style={styles.noRequestsTitle}>No Friend Requests</Text>
                 <Text style={styles.noRequestsDesc}>Share your profile to connect with other traders</Text>
-              </View>
+              </LinearGradient>
             ) : (
               friendRequests.map((request, index) => (
-                <View key={request.id} style={styles.card}>
+                <LinearGradient
+                  key={request.id}
+                  colors={['rgba(163, 230, 53, 0.1)', 'rgba(56, 189, 248, 0.1)']}
+                  style={styles.card}
+                >
                   <View style={styles.friendRow}>
                     <View style={styles.avatarWrapSmall}>
                       <Image
@@ -212,77 +224,293 @@ const SocialHub: React.FC = () => {
                   </View>
                   <View style={styles.actionRow}>
                     <TouchableOpacity style={styles.primaryBtn} onPress={() => Alert.alert("Accept")}>
-                      <Feather name="user-check" size={14} color="#fff" style={{ marginRight: 4 }} />
+                      <Feather name="user-check" size={14} color="#000" style={{ marginRight: 4 }} />
                       <Text style={styles.primaryBtnText}>Accept</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.secondaryBtn} onPress={() => Alert.alert("Decline")}>
                       <Text style={styles.secondaryBtnText}>Decline</Text>
                     </TouchableOpacity>
                   </View>
-                </View>
+                </LinearGradient>
               ))
             )}
           </View>
         )}
         {/* Share Profile Section */}
-        <View style={styles.cardShare}>
+        <LinearGradient
+          colors={['rgba(163, 230, 53, 0.1)', 'rgba(56, 189, 248, 0.1)']}
+          style={styles.cardShare}
+        >
           <View style={styles.shareRow}>
             <View>
               <Text style={styles.shareTitle}>Share Your Profile</Text>
               <Text style={styles.shareDesc}>Invite friends to join TradeVed</Text>
             </View>
             <TouchableOpacity style={styles.secondaryBtn} onPress={() => Alert.alert("Share Profile")}>
-              <Feather name="link-2" size={16} color="#2563eb" />
+              <Feather name="link-2" size={16} color="#A3E635" />
             </TouchableOpacity>
           </View>
-        </View>
+        </LinearGradient>
       </ScrollView>
     </>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#242620", padding: 16 },
-  headerWrap: { alignItems: "center", marginBottom: 12 },
-  headerTitle: { fontSize: 22, fontWeight: "bold" },
-  headerSubtitle: { color: "#64748b", fontSize: 14 },
-  tabsRow: { flexDirection: "row", marginBottom: 8 },
-  tabBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", borderRadius: 8, paddingVertical: 10, backgroundColor: "#e5e7eb", marginRight: 8 },
-  tabBtnActive: { backgroundColor: "#2563eb" },
-  tabBtnText: { color: "#2563eb", fontWeight: "bold", fontSize: 15 },
-  tabBadge: { backgroundColor: "#ef4444", borderRadius: 8, paddingHorizontal: 6, marginLeft: 6 },
-  tabBadgeText: { color: "#fff", fontWeight: "bold", fontSize: 12 },
-  searchRow: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 8, borderWidth: 1, borderColor: "#e5e7eb", marginBottom: 12, paddingHorizontal: 10 },
-  searchIcon: { marginRight: 6 },
-  searchInput: { flex: 1, height: 40, fontSize: 15, color: "#222" },
-  card: { backgroundColor: "#fff", borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: "#e5e7eb" },
-  cardCenter: { backgroundColor: "#fff", borderRadius: 16, padding: 24, alignItems: "center", marginBottom: 16, borderWidth: 1, borderColor: "#e5e7eb" },
-  friendRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
-  avatarWrap: { width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: "#2563eb", alignItems: "center", justifyContent: "center", marginRight: 10, backgroundColor: "#fff" },
-  avatar: { width: 44, height: 44, borderRadius: 22 },
-  onlineDot: { position: "absolute", bottom: 2, right: 2, width: 12, height: 12, borderRadius: 6, backgroundColor: "#22c55e", borderWidth: 2, borderColor: "#fff" },
-  friendName: { fontWeight: "bold", fontSize: 15 },
-  friendUsername: { color: "#64748b", fontSize: 13 },
-  streakBadge: { backgroundColor: "#fde047", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, marginLeft: 8 },
-  streakBadgeText: { color: "#b45309", fontWeight: "bold", fontSize: 12 },
-  statsRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
-  statsCol: { alignItems: "center", flex: 1 },
-  statsLabel: { color: "#64748b", fontSize: 12 },
-  statsValue: { fontWeight: "bold", fontSize: 15 },
-  actionRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 8, gap: 8 },
-  primaryBtn: { flexDirection: "row", alignItems: "center", backgroundColor: "#22c55e", borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12, justifyContent: "center", marginBottom: 4 },
-  primaryBtnText: { color: "#fff", fontWeight: "bold", fontSize: 15 },
-  secondaryBtn: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1, borderColor: "#2563eb", justifyContent: "center", marginBottom: 4 },
-  secondaryBtnText: { color: "#2563eb", fontWeight: "bold", fontSize: 15 },
-  avatarWrapSmall: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: "#2563eb", alignItems: "center", justifyContent: "center", marginRight: 10, backgroundColor: "#fff" },
-  avatarSmall: { width: 32, height: 32, borderRadius: 16 },
-  mutualFriends: { color: "#64748b", fontSize: 12 },
-  noRequestsTitle: { fontWeight: "bold", fontSize: 16, marginBottom: 4 },
-  noRequestsDesc: { color: "#64748b", fontSize: 13 },
-  cardShare: { backgroundColor: "#f0fdf4", borderRadius: 16, padding: 16, marginTop: 16, borderWidth: 1, borderColor: "#bbf7d0" },
-  shareRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  shareTitle: { fontWeight: "bold", fontSize: 15 },
-  shareDesc: { color: "#64748b", fontSize: 13 },
+  container: { 
+    flex: 1, 
+    backgroundColor: "#242620", 
+    padding: 16 
+  },
+  headerWrap: { 
+    alignItems: "center", 
+    marginBottom: 12 
+  },
+  headerTitle: { 
+    fontSize: 22, 
+    fontWeight: "bold",
+    color: "#fff"
+  },
+  headerSubtitle: { 
+    color: "#94a3b8", 
+    fontSize: 14 
+  },
+  tabsRow: { 
+    flexDirection: "row", 
+    marginBottom: 8,
+    gap: 8,
+  },
+  tabBtn: { 
+    flex: 1, 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    borderRadius: 8, 
+    paddingVertical: 10, 
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    borderWidth: 1,
+    borderColor: 'rgba(163, 230, 53, 0.2)'
+  },
+  tabBtnActive: { 
+    backgroundColor: "rgba(163, 230, 53, 0.1)" 
+  },
+  tabBtnText: { 
+    color: "#94a3b8", 
+    fontWeight: "bold", 
+    fontSize: 15 
+  },
+  tabBtnTextActive: {
+    color: "#A3E635"
+  },
+  tabBadge: { 
+    backgroundColor: "#ef4444", 
+    borderRadius: 8, 
+    paddingHorizontal: 6, 
+    marginLeft: 6 
+  },
+  tabBadgeText: { 
+    color: "#fff", 
+    fontWeight: "bold", 
+    fontSize: 12 
+  },
+  searchRow: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    backgroundColor: "rgba(0, 0, 0, 0.2)", 
+    borderRadius: 8, 
+    borderWidth: 1, 
+    borderColor: "rgba(163, 230, 53, 0.2)", 
+    marginBottom: 12, 
+    paddingHorizontal: 10 
+  },
+  searchIcon: { 
+    marginRight: 6 
+  },
+  searchInput: { 
+    flex: 1, 
+    height: 40, 
+    fontSize: 15, 
+    color: "#fff" 
+  },
+  card: { 
+    borderRadius: 16, 
+    padding: 16, 
+    marginBottom: 16, 
+    borderWidth: 1, 
+    borderColor: "rgba(163, 230, 53, 0.2)" 
+  },
+  cardCenter: { 
+    borderRadius: 16, 
+    padding: 24, 
+    alignItems: "center", 
+    marginBottom: 16, 
+    borderWidth: 1, 
+    borderColor: "rgba(163, 230, 53, 0.2)" 
+  },
+  friendRow: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    marginBottom: 10 
+  },
+  avatarWrap: { 
+    width: 48, 
+    height: 48, 
+    borderRadius: 24, 
+    borderWidth: 2, 
+    borderColor: "#A3E635", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    marginRight: 10, 
+    backgroundColor: "rgba(0, 0, 0, 0.2)" 
+  },
+  avatar: { 
+    width: 44, 
+    height: 44, 
+    borderRadius: 22 
+  },
+  onlineDot: { 
+    position: "absolute", 
+    bottom: 2, 
+    right: 2, 
+    width: 12, 
+    height: 12, 
+    borderRadius: 6, 
+    backgroundColor: "#22c55e", 
+    borderWidth: 2, 
+    borderColor: "#242620" 
+  },
+  friendName: { 
+    fontWeight: "bold", 
+    fontSize: 15,
+    color: "#fff"
+  },
+  friendUsername: { 
+    color: "#94a3b8", 
+    fontSize: 13 
+  },
+  streakBadge: { 
+    backgroundColor: "rgba(234, 179, 8, 0.2)", 
+    borderRadius: 8, 
+    paddingHorizontal: 8, 
+    paddingVertical: 2, 
+    marginLeft: 8 
+  },
+  streakBadgeText: { 
+    color: "#fde047", 
+    fontWeight: "bold", 
+    fontSize: 12 
+  },
+  statsRow: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    marginBottom: 8,
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    borderRadius: 8,
+    padding: 12
+  },
+  statsCol: { 
+    alignItems: "center", 
+    flex: 1 
+  },
+  statsLabel: { 
+    color: "#94a3b8", 
+    fontSize: 12 
+  },
+  statsValue: { 
+    fontWeight: "bold", 
+    fontSize: 15,
+    color: "#fff"
+  },
+  actionRow: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "space-between", 
+    marginTop: 8, 
+    gap: 8 
+  },
+  primaryBtn: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    backgroundColor: "#A3E635", 
+    borderRadius: 8, 
+    paddingVertical: 10, 
+    paddingHorizontal: 12, 
+    justifyContent: "center", 
+    flex: 1
+  },
+  primaryBtnText: { 
+    color: "#000", 
+    fontWeight: "bold", 
+    fontSize: 15 
+  },
+  secondaryBtn: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    backgroundColor: "rgba(0, 0, 0, 0.2)", 
+    borderRadius: 8, 
+    paddingVertical: 10, 
+    paddingHorizontal: 12, 
+    borderWidth: 1, 
+    borderColor: "rgba(163, 230, 53, 0.2)", 
+    justifyContent: "center",
+    flex: 1
+  },
+  secondaryBtnText: { 
+    color: "#A3E635", 
+    fontWeight: "bold", 
+    fontSize: 15 
+  },
+  avatarWrapSmall: { 
+    width: 36, 
+    height: 36, 
+    borderRadius: 18, 
+    borderWidth: 2, 
+    borderColor: "#A3E635", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    marginRight: 10, 
+    backgroundColor: "rgba(0, 0, 0, 0.2)" 
+  },
+  avatarSmall: { 
+    width: 32, 
+    height: 32, 
+    borderRadius: 16 
+  },
+  mutualFriends: { 
+    color: "#94a3b8", 
+    fontSize: 12 
+  },
+  noRequestsTitle: { 
+    fontWeight: "bold", 
+    fontSize: 16, 
+    marginBottom: 4,
+    color: "#fff"
+  },
+  noRequestsDesc: { 
+    color: "#94a3b8", 
+    fontSize: 13 
+  },
+  cardShare: { 
+    borderRadius: 16, 
+    padding: 16, 
+    marginTop: 16, 
+    borderWidth: 1, 
+    borderColor: "rgba(163, 230, 53, 0.2)" 
+  },
+  shareRow: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "space-between" 
+  },
+  shareTitle: { 
+    fontWeight: "bold", 
+    fontSize: 15,
+    color: "#fff"
+  },
+  shareDesc: { 
+    color: "#94a3b8", 
+    fontSize: 13 
+  },
 });
 
 export default SocialHub; 

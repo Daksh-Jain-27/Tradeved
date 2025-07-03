@@ -1,4 +1,6 @@
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from 'expo-linear-gradient';
+import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -9,7 +11,6 @@ import {
   View,
 } from "react-native";
 import QuizNavBar from "../../components/QuizNavBar";
-import { Stack, useRouter } from 'expo-router';
 
 const questions = [
   {
@@ -105,15 +106,17 @@ const PracticeSession: React.FC = () => {
       {/* Header */}
       <View style={styles.headerRow}>
         <TouchableOpacity style={styles.iconButton} onPress={() => useRouter().back()}> 
-          <Feather name="arrow-left" size={22} color="#64748b" />
+          <Feather name="arrow-left" size={22} color="#94a3b8" />
         </TouchableOpacity>
         <View style={{ alignItems: "center" }}>
-          <View style={styles.badgeOutline}><Text style={styles.badgeText}>Question {currentQuestion}/{totalQuestions}</Text></View>
+          <View style={styles.badgeOutline}>
+            <Text style={styles.badgeText}>Question {currentQuestion}/{totalQuestions}</Text>
+          </View>
           {mode === "timed" && timeLeft !== null && (
             <View style={{
               ...styles.badgeOutline,
               ...(timeLeft <= 5
-                ? { backgroundColor: "#fee2e2", borderColor: "#ef4444" }
+                ? { backgroundColor: "rgba(239, 68, 68, 0.1)", borderColor: "rgba(239, 68, 68, 0.2)" }
                 : {})
             }}>
               <Text style={{
@@ -124,7 +127,7 @@ const PracticeSession: React.FC = () => {
           )}
         </View>
         <TouchableOpacity style={styles.iconButton} onPress={handleRestart}> 
-          <Feather name="rotate-ccw" size={22} color="#64748b" />
+          <Feather name="rotate-ccw" size={22} color="#94a3b8" />
         </TouchableOpacity>
       </View>
       {/* Progress */}
@@ -133,12 +136,15 @@ const PracticeSession: React.FC = () => {
       </View>
       {/* Score */}
       <View style={{ alignItems: "center", marginBottom: 8 }}>
-        <View style={[styles.badgeOutline, { backgroundColor: "#f0fdf4", borderColor: "#bbf7d0" }]}> 
-          <Text style={[styles.badgeText, { color: "#22c55e" }]}>Score: {score}/{currentQuestion - (selectedAnswer === null ? 1 : 0)}</Text>
+        <View style={[styles.badgeOutline, { backgroundColor: "rgba(163, 230, 53, 0.1)", borderColor: "rgba(163, 230, 53, 0.2)" }]}> 
+          <Text style={[styles.badgeText, { color: "#A3E635" }]}>Score: {score}/{currentQuestion - (selectedAnswer === null ? 1 : 0)}</Text>
         </View>
       </View>
       {/* Question */}
-      <View style={styles.card}>
+      <LinearGradient
+        colors={['rgba(163, 230, 53, 0.1)', 'rgba(56, 189, 248, 0.1)']}
+        style={styles.card}
+      >
         <Text style={styles.questionText}>{currentQ.text}</Text>
         {currentQ.options.map((option, index) => {
           const isSelected = selectedAnswer === index;
@@ -159,31 +165,34 @@ const PracticeSession: React.FC = () => {
               disabled={selectedAnswer !== null}
             >
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-                <Text style={styles.answerText}>{option}</Text>
+                <Text style={[styles.answerText, selectedAnswer === null && { color: "#fff" }]}>{option}</Text>
                 {showResult && isSelected && (
                   isCorrect ? (
-                    <Feather name="check-circle" size={20} color="#22c55e" />
+                    <Feather name="check-circle" size={20} color="#A3E635" />
                   ) : (
                     <Feather name="x" size={20} color="#ef4444" />
                   )
                 )}
                 {showResult && isCorrect && selectedAnswer !== index && (
-                  <Feather name="check-circle" size={20} color="#22c55e" />
+                  <Feather name="check-circle" size={20} color="#A3E635" />
                 )}
               </View>
             </TouchableOpacity>
           );
         })}
-      </View>
+      </LinearGradient>
       {/* Explanation */}
       {showResult && (
-        <View style={styles.cardExplanation}>
+        <LinearGradient
+          colors={['rgba(56, 189, 248, 0.1)', 'rgba(163, 230, 53, 0.1)']}
+          style={styles.cardExplanation}
+        >
           <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
             <Feather name="info" size={16} color="#38bdf8" style={{ marginRight: 6 }} />
             <Text style={{ color: "#38bdf8", fontWeight: "bold" }}>Explanation</Text>
           </View>
           <Text style={styles.explanationText}>{currentQ.explanation}</Text>
-        </View>
+        </LinearGradient>
       )}
       {/* Next Button */}
       {showResult && (
@@ -199,23 +208,23 @@ const PracticeSession: React.FC = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#242620", padding: 16 },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  iconButton: { padding: 8, borderRadius: 8, backgroundColor: "#fff" },
-  badgeOutline: { borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, backgroundColor: "#fff", marginBottom: 2 },
-  badgeText: { color: "#64748b", fontWeight: "bold", fontSize: 13 },
-  progressBarWrap: { height: 8, backgroundColor: "#e5e7eb", borderRadius: 8, marginBottom: 12, marginTop: 4 },
-  progressBar: { height: 8, backgroundColor: "#22c55e", borderRadius: 8 },
-  card: { backgroundColor: "#fff", borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: "#bbf7d0" },
-  questionText: { fontWeight: "bold", fontSize: 16, marginBottom: 12 },
-  answerButton: { backgroundColor: "#f1f5f9", borderRadius: 10, paddingVertical: 14, paddingHorizontal: 12, marginBottom: 8, borderWidth: 1, borderColor: "#e5e7eb" },
+  iconButton: { padding: 8, borderRadius: 8, backgroundColor: "rgba(0, 0, 0, 0.2)", borderWidth: 1, borderColor: "rgba(163, 230, 53, 0.2)" },
+  badgeOutline: { borderWidth: 1, borderColor: "rgba(163, 230, 53, 0.2)", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, backgroundColor: "rgba(0, 0, 0, 0.2)", marginBottom: 2 },
+  badgeText: { color: "#94a3b8", fontWeight: "bold", fontSize: 13 },
+  progressBarWrap: { height: 8, backgroundColor: "rgba(0, 0, 0, 0.2)", borderRadius: 8, marginBottom: 12, marginTop: 4, borderWidth: 1, borderColor: "rgba(163, 230, 53, 0.2)" },
+  progressBar: { height: 8, backgroundColor: "#A3E635", borderRadius: 8 },
+  card: { borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: "rgba(163, 230, 53, 0.2)" },
+  questionText: { fontWeight: "bold", fontSize: 16, marginBottom: 12, color: "#fff" },
+  answerButton: { backgroundColor: "rgba(0, 0, 0, 0.2)", borderRadius: 10, paddingVertical: 14, paddingHorizontal: 12, marginBottom: 8, borderWidth: 1, borderColor: "rgba(163, 230, 53, 0.2)" },
   answerDefault: {},
-  answerCorrect: { borderColor: "#22c55e", backgroundColor: "#bbf7d0" },
-  answerWrong: { borderColor: "#ef4444", backgroundColor: "#fee2e2" },
+  answerCorrect: { borderColor: "#A3E635", backgroundColor: "rgba(163, 230, 53, 0.1)" },
+  answerWrong: { borderColor: "#ef4444", backgroundColor: "rgba(239, 68, 68, 0.1)" },
   answerDim: { opacity: 0.5 },
-  answerText: { fontSize: 15, fontWeight: "500" },
-  cardExplanation: { backgroundColor: "#f1f5f9", borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "#38bdf8" },
-  explanationText: { color: "#64748b", fontSize: 13 },
-  nextBtn: { backgroundColor: "#22c55e", borderRadius: 8, paddingVertical: 14, alignItems: "center", marginTop: 8 },
-  nextBtnText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  answerText: { fontSize: 15, fontWeight: "500", color: "#fff" },
+  cardExplanation: { borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "rgba(56, 189, 248, 0.2)" },
+  explanationText: { color: "#94a3b8", fontSize: 13 },
+  nextBtn: { backgroundColor: "#A3E635", borderRadius: 8, paddingVertical: 14, alignItems: "center", marginTop: 8 },
+  nextBtnText: { color: "#000", fontWeight: "bold", fontSize: 16 },
 });
 
 export default PracticeSession; 

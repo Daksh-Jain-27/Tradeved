@@ -1,4 +1,6 @@
 import { Feather, FontAwesome5, Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from 'expo-linear-gradient';
+import { Stack } from 'expo-router';
 import React, { useState } from "react";
 import {
   Alert,
@@ -12,7 +14,6 @@ import {
   View,
 } from "react-native";
 import QuizNavBar from "../../components/QuizNavBar";
-import { Stack } from 'expo-router';
 
 type LeaderboardEntry = {
   rank: number;
@@ -101,23 +102,26 @@ const CompetitionDetail: React.FC<CompetitionDetailProps> = ({ competitionId }) 
           <Text style={styles.headerTitle}>{competition.name}</Text>
           <Text style={styles.headerSubtitle}>{competition.description}</Text>
           <View style={styles.prizeBadge}>
-            <FontAwesome5 name="trophy" size={14} color="#eab308" style={{ marginRight: 4 }} />
+            <FontAwesome5 name="trophy" size={14} color="#fde047" style={{ marginRight: 4 }} />
             <Text style={styles.prizeBadgeText}>{competition.prize} Prize Pool</Text>
           </View>
         </View>
 
         {/* Competition Info */}
-        <View style={styles.card}>
+        <LinearGradient
+          colors={['rgba(163, 230, 53, 0.1)', 'rgba(56, 189, 248, 0.1)']}
+          style={styles.card}
+        >
           <View style={styles.infoGrid}>
             <View style={styles.infoBox}>
-              <Feather name="users" size={20} color="#22c55e" style={{ alignSelf: "center" }} />
+              <Feather name="users" size={20} color="#A3E635" style={{ alignSelf: "center" }} />
               <Text style={styles.infoLabel}>Participants</Text>
               <Text style={styles.infoValue}>
                 {competition.participants}/{competition.maxParticipants}
               </Text>
             </View>
             <View style={styles.infoBox}>
-              <Ionicons name="calendar" size={20} color="#38bdf8" style={{ alignSelf: "center" }} />
+              <Ionicons name="calendar" size={20} color="#A3E635" style={{ alignSelf: "center" }} />
               <Text style={styles.infoLabel}>Start Date</Text>
               <Text style={styles.infoValue}>{competition.startDate}</Text>
             </View>
@@ -146,6 +150,7 @@ const CompetitionDetail: React.FC<CompetitionDetailProps> = ({ competitionId }) 
                       <TextInput
                         style={styles.input}
                         placeholder="your.name@college.edu"
+                        placeholderTextColor="#94a3b8"
                         value={email}
                         onChangeText={setEmail}
                         keyboardType="email-address"
@@ -154,6 +159,7 @@ const CompetitionDetail: React.FC<CompetitionDetailProps> = ({ competitionId }) 
                       <TextInput
                         style={styles.input}
                         placeholder="Enter your roll number"
+                        placeholderTextColor="#94a3b8"
                         value={rollNumber}
                         onChangeText={setRollNumber}
                       />
@@ -181,17 +187,17 @@ const CompetitionDetail: React.FC<CompetitionDetailProps> = ({ competitionId }) 
               </>
             ) : (
               <View style={styles.successBox}>
-                <Feather name="check-circle" size={20} color="#22c55e" style={{ marginRight: 8 }} />
+                <Feather name="check-circle" size={20} color="#A3E635" style={{ marginRight: 8 }} />
                 <Text style={styles.successText}>Successfully Registered!</Text>
               </View>
             )}
 
             <TouchableOpacity style={styles.reminderButton} onPress={handleSetReminder}>
-              <Feather name="bell" size={18} color="#22c55e" style={{ marginRight: 8 }} />
+              <Feather name="bell" size={18} color="#A3E635" style={{ marginRight: 8 }} />
               <Text style={styles.reminderButtonText}>Set Google Reminder</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </LinearGradient>
 
         {/* Tabs */}
         <View style={styles.tabsRow}>
@@ -223,19 +229,25 @@ const CompetitionDetail: React.FC<CompetitionDetailProps> = ({ competitionId }) 
 
         {/* Tab Content */}
         {tab === "rules" && (
-          <View style={styles.card}>
+          <LinearGradient
+            colors={['rgba(163, 230, 53, 0.1)', 'rgba(56, 189, 248, 0.1)']}
+            style={styles.card}
+          >
             <Text style={styles.sectionTitle}>Competition Rules</Text>
             {competition.rules.map((rule, idx) => (
               <View key={idx} style={styles.ruleRow}>
-                <Feather name="check-circle" size={16} color="#22c55e" style={{ marginRight: 8 }} />
+                <Feather name="check-circle" size={16} color="#A3E635" style={{ marginRight: 8 }} />
                 <Text style={styles.ruleText}>{rule}</Text>
               </View>
             ))}
-          </View>
+          </LinearGradient>
         )}
 
         {tab === "leaderboard" && (
-          <View style={styles.card}>
+          <LinearGradient
+            colors={['rgba(163, 230, 53, 0.1)', 'rgba(56, 189, 248, 0.1)']}
+            style={styles.card}
+          >
             <Text style={styles.sectionTitle}>Current Standings</Text>
             {competition.leaderboard.map((entry) => (
               <View key={entry.rank} style={styles.leaderboardRow}>
@@ -269,19 +281,22 @@ const CompetitionDetail: React.FC<CompetitionDetailProps> = ({ competitionId }) 
                 </View>
               </View>
             ))}
-          </View>
+          </LinearGradient>
         )}
 
         {tab === "results" && (
-          <View style={styles.card}>
+          <LinearGradient
+            colors={['rgba(163, 230, 53, 0.1)', 'rgba(56, 189, 248, 0.1)']}
+            style={styles.card}
+          >
             <View style={{ alignItems: "center", padding: 24 }}>
-              <Feather name="clock" size={48} color="#64748b" style={{ marginBottom: 12 }} />
+              <Feather name="clock" size={48} color="#94a3b8" style={{ marginBottom: 12 }} />
               <Text style={styles.sectionTitle}>Results Pending</Text>
               <Text style={styles.resultsText}>
                 Competition results will be available after the event concludes on {competition.endDate}.
               </Text>
             </View>
-          </View>
+          </LinearGradient>
         )}
       </ScrollView>
     </>
@@ -289,37 +304,72 @@ const CompetitionDetail: React.FC<CompetitionDetailProps> = ({ competitionId }) 
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#242620", padding: 16 },
-  header: { alignItems: "center", marginBottom: 16 },
-  headerTitle: { fontSize: 22, fontWeight: "bold", marginBottom: 4 },
-  headerSubtitle: { color: "#64748b", fontSize: 14, marginBottom: 8 },
+  container: { 
+    flex: 1, 
+    backgroundColor: "#242620", 
+    padding: 16 
+  },
+  header: { 
+    alignItems: "center", 
+    marginBottom: 16 
+  },
+  headerTitle: { 
+    fontSize: 22, 
+    fontWeight: "bold", 
+    marginBottom: 4,
+    color: "#fff"
+  },
+  headerSubtitle: { 
+    color: "#94a3b8", 
+    fontSize: 14, 
+    marginBottom: 8 
+  },
   prizeBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fef9c3",
+    backgroundColor: "rgba(234, 179, 8, 0.2)",
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 2,
     marginBottom: 8,
   },
-  prizeBadgeText: { color: "#eab308", fontWeight: "bold", fontSize: 13 },
+  prizeBadgeText: { 
+    color: "#fde047", 
+    fontWeight: "bold", 
+    fontSize: 13 
+  },
   card: {
-    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: "rgba(163, 230, 53, 0.2)"
   },
-  infoGrid: { flexDirection: "row", justifyContent: "space-between" },
-  infoBox: { flex: 1, alignItems: "center" },
-  infoLabel: { fontSize: 12, color: "#64748b", marginTop: 2 },
-  infoValue: { fontWeight: "bold", fontSize: 15, marginTop: 2 },
+  infoGrid: { 
+    flexDirection: "row", 
+    justifyContent: "space-between",
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    borderRadius: 8,
+    padding: 12
+  },
+  infoBox: { 
+    flex: 1, 
+    alignItems: "center" 
+  },
+  infoLabel: { 
+    fontSize: 12, 
+    color: "#94a3b8", 
+    marginTop: 2 
+  },
+  infoValue: { 
+    fontWeight: "bold", 
+    fontSize: 15, 
+    marginTop: 2,
+    color: "#fff"
+  },
   joinButton: {
     flexDirection: "row",
-    backgroundColor: "#bbf7d0",
+    backgroundColor: "#9bec00",
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
@@ -327,12 +377,16 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 4,
   },
-  joinButtonText: { color: "#000", fontWeight: "bold", fontSize: 16 },
+  joinButtonText: { 
+    color: "#000", 
+    fontWeight: "bold", 
+    fontSize: 16 
+  },
   reminderButton: {
     flexDirection: "row",
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
     borderWidth: 1,
-    borderColor: "#22c55e",
+    borderColor: "rgba(163, 230, 53, 0.2)",
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
@@ -340,73 +394,130 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 4,
   },
-  reminderButtonText: { color: "#22c55e", fontWeight: "bold", fontSize: 16 },
+  reminderButtonText: { 
+    color: "#A3E635", 
+    fontWeight: "bold", 
+    fontSize: 16 
+  },
   successBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#bbf7d0",
+    backgroundColor: "rgba(163, 230, 53, 0.1)",
     borderRadius: 12,
     justifyContent: "center",
     paddingVertical: 14,
     marginTop: 8,
     marginBottom: 4,
   },
-  successText: { color: "#22c55e", fontWeight: "bold", fontSize: 16 },
+  successText: { 
+    color: "#A3E635", 
+    fontWeight: "bold", 
+    fontSize: 16 
+  },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.3)",
+    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
   },
   modalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: "#242620",
     borderRadius: 16,
     padding: 24,
     width: "85%",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(163, 230, 53, 0.2)"
   },
-  modalTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 16 },
+  modalTitle: { 
+    fontSize: 18, 
+    fontWeight: "bold", 
+    marginBottom: 16,
+    color: "#fff"
+  },
   input: {
     width: "100%",
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: "rgba(163, 230, 53, 0.2)",
     borderRadius: 8,
     padding: 10,
     marginBottom: 12,
     fontSize: 15,
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    color: "#fff"
   },
   cancelButton: {
     marginTop: 8,
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(163, 230, 53, 0.2)",
   },
-  cancelButtonText: { color: "#64748b", fontWeight: "bold" },
-  tabsRow: { flexDirection: "row", marginBottom: 12, marginTop: 4 },
+  cancelButtonText: { 
+    color: "#94a3b8", 
+    fontWeight: "bold" 
+  },
+  tabsRow: { 
+    flexDirection: "row", 
+    marginBottom: 12, 
+    marginTop: 4,
+    gap: 8
+  },
   tabButton: {
     flex: 1,
     paddingVertical: 10,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
     borderRadius: 8,
-    marginHorizontal: 2,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(163, 230, 53, 0.2)"
   },
-  tabButtonActive: { backgroundColor: "#22c55e" },
-  tabButtonText: { color: "#64748b", fontWeight: "500" },
-  tabButtonTextActive: { color: "#fff" },
-  sectionTitle: { fontSize: 16, fontWeight: "bold", marginBottom: 8 },
-  ruleRow: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
-  ruleText: { fontSize: 14 },
+  tabButtonActive: { 
+    backgroundColor: "rgba(163, 230, 53, 0.1)" 
+  },
+  tabButtonText: { 
+    color: "#94a3b8", 
+    fontWeight: "500" 
+  },
+  tabButtonTextActive: { 
+    color: "#A3E635" 
+  },
+  sectionTitle: { 
+    fontSize: 16, 
+    fontWeight: "bold", 
+    marginBottom: 8,
+    color: "#fff"
+  },
+  ruleRow: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    marginBottom: 6,
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    padding: 8,
+    borderRadius: 8
+  },
+  ruleText: { 
+    fontSize: 14,
+    color: "#fff"
+  },
   leaderboardRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
+    borderBottomColor: "rgba(163, 230, 53, 0.1)",
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8
   },
-  leaderboardLeft: { flexDirection: "row", alignItems: "center" },
+  leaderboardLeft: { 
+    flexDirection: "row", 
+    alignItems: "center" 
+  },
   rankBadge: {
     borderRadius: 8,
     paddingHorizontal: 8,
@@ -415,17 +526,54 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  rankBadgeGold: { backgroundColor: "#fde68a" },
-  rankBadgeSilver: { backgroundColor: "#d1d5db" },
-  rankBadgeBronze: { backgroundColor: "#92400e" },
-  rankBadgeDefault: { backgroundColor: "#f1f5f9" },
-  rankBadgeText: { fontWeight: "bold", color: "#000", fontSize: 13 },
-  avatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#e5e7eb", marginRight: 8 },
-  leaderboardName: { fontWeight: "500", fontSize: 14 },
-  leaderboardCollege: { color: "#64748b", fontSize: 11 },
-  leaderboardScore: { fontWeight: "bold", color: "#22c55e", fontSize: 16 },
-  leaderboardPoints: { color: "#64748b", fontSize: 12 },
-  resultsText: { color: "#64748b", fontSize: 13, textAlign: "center", marginTop: 8 },
+  rankBadgeGold: { 
+    backgroundColor: "rgba(234, 179, 8, 0.2)" 
+  },
+  rankBadgeSilver: { 
+    backgroundColor: "rgba(209, 213, 219, 0.2)" 
+  },
+  rankBadgeBronze: { 
+    backgroundColor: "rgba(146, 64, 14, 0.2)" 
+  },
+  rankBadgeDefault: { 
+    backgroundColor: "rgba(241, 245, 249, 0.2)" 
+  },
+  rankBadgeText: { 
+    fontWeight: "bold", 
+    color: "#fff", 
+    fontSize: 13 
+  },
+  avatar: { 
+    width: 32, 
+    height: 32, 
+    borderRadius: 16, 
+    backgroundColor: "rgba(0, 0, 0, 0.2)", 
+    marginRight: 8 
+  },
+  leaderboardName: { 
+    fontWeight: "500", 
+    fontSize: 14,
+    color: "#fff"
+  },
+  leaderboardCollege: { 
+    color: "#94a3b8", 
+    fontSize: 11 
+  },
+  leaderboardScore: { 
+    fontWeight: "bold", 
+    color: "#A3E635", 
+    fontSize: 16 
+  },
+  leaderboardPoints: { 
+    color: "#94a3b8", 
+    fontSize: 12 
+  },
+  resultsText: { 
+    color: "#94a3b8", 
+    fontSize: 13, 
+    textAlign: "center", 
+    marginTop: 8 
+  },
 });
 
 export default CompetitionDetail; 

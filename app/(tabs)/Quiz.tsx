@@ -201,7 +201,7 @@ const HomeArena: React.FC = () => {
               <FontAwesome5 name="trophy" size={16} color="#eab308" style={{ marginRight: 6 }} />
               <Text style={styles.cardHeaderTitle}>Live Tournaments</Text>
             </View>
-            <TouchableOpacity onPress={() => router.push('/quiz-pages/competition-hub')}> 
+            <TouchableOpacity onPress={() => router.push('/quiz-pages/games-hub')}> 
               <Text style={styles.cardHeaderAction}>View All</Text>
             </TouchableOpacity>
           </View>
