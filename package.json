@@ -48,16 +48,18 @@
     "react-native-dropdown-picker": "^5.4.6",
     "react-native-elements": "^3.4.3",
     "react-native-gesture-handler": "~2.24.0",
+    "react-native-gifted-charts": "^1.4.61",
     "react-native-picker": "^4.3.7",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.10.0",
     "react-native-shadow-2": "^7.1.1",
-    "react-native-svg": "^13.9.0",
+    "react-native-svg": "^13.14.1",
     "react-native-toast-message": "^2.3.0",
     "react-native-vector-icons": "^10.2.0",
     "react-native-web": "~0.20.0",
-    "react-native-webview": "13.13.5"
+    "react-native-webview": "13.13.5",
+    "socket.io-client": "^4.5.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

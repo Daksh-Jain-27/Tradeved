@@ -1,7 +1,14 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
-import { Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Dimensions, Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, UIManager, View } from 'react-native';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
+import { LineChart } from 'react-native-gifted-charts';
+
+// Enable LayoutAnimation for Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const { width } = Dimensions.get('window');
 
@@ -62,9 +69,52 @@ const GaugeCard: React.FC<GaugeCardProps> = ({ title, correct, wrong }) => (
   </View>
 );
 
-const avatarUri = 'https://randomuser.me/api/portraits/women/44.jpg'; // Placeholder avatar
+const avatarUri = 'https://randomuser.me/api/portraits/women/44.jpg';
+
+// Add interface for tooltip item
+interface TooltipItem {
+  value: number;
+  dataPointText?: string;
+  label?: string;
+  showPointer?: boolean;
+  pointer?: any;
+}
 
 export default function Home() {
+  const [tooltipData] = useState({
+    Monday: 0,
+    Tuesday: 0,
+    Wednesday: 123,
+    Thursday: 23098,
+    Friday: 12,
+    Saturday: 1,
+    Sunday: 45908
+  });
+
+  const chartData = [
+    { value: 10, label: 'Week 1' },
+    { value: 58, label: 'Week 2' },
+    { value: 68, label: 'Week 3' },
+    { value: 88, label: 'Week 4' }
+  ];
+
+  const CustomTooltip = (item: TooltipItem) => {
+    return (
+      <View style={styles.tooltipContainer}>
+        <Text style={styles.tooltipTitle}>Graph Info</Text>
+        <View style={styles.tooltipContent}>
+          <Text style={styles.tooltipItem}>Monday: {tooltipData.Monday}</Text>
+          <Text style={styles.tooltipItem}>Tuesday: {tooltipData.Tuesday}</Text>
+          <Text style={styles.tooltipItem}>Wednesday: {tooltipData.Wednesday}</Text>
+          <Text style={styles.tooltipItem}>Thursday: {tooltipData.Thursday}</Text>
+          <Text style={styles.tooltipItem}>Friday: {tooltipData.Friday}</Text>
+          <Text style={styles.tooltipItem}>Saturday: {tooltipData.Saturday}</Text>
+          <Text style={styles.tooltipItem}>Sunday: {tooltipData.Sunday}</Text>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32, paddingTop: 16 }}>
       {/* Header */}
@@ -124,28 +174,62 @@ export default function Home() {
             <View style={styles.arrowUp} />
           </View>
 
-          {/* Graph grid */}
-          <View style={styles.gridContainer}>
-            {[100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0].map((value) => (
-              <View key={value} style={styles.gridRow}>
-                <Text style={styles.yAxisValue}>{value}</Text>
-                <View style={styles.gridLine} />
-              </View>
-            ))}
-
-            {/* X-axis labels */}
-            <View style={styles.xAxisContainer}>
-              <View style={styles.xAxisLabels}>
-                {['Week 1', 'Week 2', 'Week 3', 'Week 4'].map((week, index) => (
-                  <Text key={week} style={styles.xAxisText}>{week}</Text>
-                ))}
-              </View>
-              <View style={styles.xAxisArrow}>
-                <Text style={styles.xAxisLabel}>No. of Week</Text>
-                <View style={styles.arrowRight} />
-              </View>
-            </View>
+          {/* Chart Container */}
+          <View style={styles.chartWrapper}>
+            <LineChart
+              data={chartData}
+              width={width - 120}
+              height={238}
+              maxValue={100}
+              noOfSections={10}
+              spacing={60}
+              thickness={3}
+              color="white"
+              dataPointsColor="white"
+              dataPointsRadius={6}
+              backgroundColor="transparent"
+              rulesColor="#444"
+              rulesType="solid"
+              xAxisColor="#444"
+              yAxisColor="#444"
+              yAxisTextStyle={styles.yAxisTextStyle}
+              xAxisLabelTextStyle={styles.xAxisTextStyle}
+              showVerticalLines
+              verticalLinesColor="#444"
+              isAnimated
+              animationDuration={1000}
+              initialSpacing={20}
+              endSpacing={-20}
+              yAxisLabelWidth={30}
+              xAxisLabelsVerticalShift={0}
+              hideYAxisText={false}
+              hideAxesAndRules={false}
+              adjustToWidth
+              stepHeight={23.6}
+              yAxisOffset={0}
+              pointerConfig={{
+                pointerStripUptoDataPoint: true,
+                pointerStripColor: 'white',
+                pointerStripWidth: 2,
+                strokeDashArray: [2, 5],
+                pointerColor: 'white',
+                radius: 6,
+                pointerLabelComponent: CustomTooltip,
+                activatePointersOnLongPress: false,
+                autoAdjustPointerLabelPosition: true,
+                pointerLabelWidth: 140,
+                pointerLabelHeight: 120,
+              }}
+            />
           </View>
+
+          {/* X-axis labels and arrow */}
+          
+            <View style={styles.xAxisArrow}>
+              <Text style={styles.xAxisLabel}>No. of Week</Text>
+              <View style={styles.arrowRight} />
+            </View>
+          
         </View>
       </View>
 
@@ -153,46 +237,6 @@ export default function Home() {
         <GaugeCard title="Quests" correct={75} wrong={25} />
         <GaugeCard title="Quiz" correct={60} wrong={40} />
       </View>
-
-      {/* Quests and Quiz */}
-      {/* <View style={styles.row}>
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Quests</Text>
-            <TouchableOpacity style={styles.dropdownSmall}>
-              <Text style={styles.dropdownTextSmall}>Weekly</Text>
-              <MaterialIcons name="arrow-drop-down" size={16} color="#fff" />
-            </TouchableOpacity>
-          </View> */}
-      {/* Gauge */}
-      {/* <View style={styles.gaugeRow}>
-            <FontAwesome name="circle" size={24} color="#2ecc40" />
-            <FontAwesome name="circle" size={24} color="#ff4136" style={{ marginLeft: 16 }} />
-          </View>
-          <View style={styles.gaugeLabelRow}>
-            <Text style={styles.gaugeLabel}>Correct</Text>
-            <Text style={styles.gaugeLabel}>Wrong</Text>
-          </View>
-        </View>
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Quiz</Text>
-            <TouchableOpacity style={styles.dropdownSmall}>
-              <Text style={styles.dropdownTextSmall}>Weekly</Text>
-              <MaterialIcons name="arrow-drop-down" size={16} color="#fff" />
-            </TouchableOpacity>
-          </View> */}
-      {/* Gauge */}
-      {/* <View style={styles.gaugeRow}>
-            <FontAwesome name="circle" size={24} color="#2ecc40" />
-            <FontAwesome name="circle" size={24} color="#ff4136" style={{ marginLeft: 16 }} />
-          </View>
-          <View style={styles.gaugeLabelRow}>
-            <Text style={styles.gaugeLabel}>Correct</Text>
-            <Text style={styles.gaugeLabel}>Wrong</Text>
-          </View>
-        </View>
-      </View> */}
 
       {/* Journal and Paper Trades */}
       <View style={styles.row}>
@@ -257,7 +301,7 @@ export default function Home() {
       </View>
     </ScrollView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -294,7 +338,6 @@ const styles = StyleSheet.create({
   row1: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    // paddingHorizontal: 16,
     marginBottom: 16,
     gap: 16,
   },
@@ -360,7 +403,6 @@ const styles = StyleSheet.create({
     color: '#aaa',
     fontSize: 12,
   },
-
   avatar: {
     width: 36,
     height: 36,
@@ -390,7 +432,6 @@ const styles = StyleSheet.create({
   statIcon: {
     width: 14,
     height: 14,
-    // marginRight: 4,
     marginLeft: 4,
   },
   pillText: {
@@ -441,15 +482,12 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   graphContainer: {
-    flexDirection: 'row',
-    height: 320,
-    marginTop: 8,
+    height: 290,
+    marginTop: 8, // Add padding for X-axis label
   },
   yAxisLabel: {
-    // width: 40,
     alignItems: 'center',
-    // marginRight: 8,
-    marginLeft: 10,
+    marginLeft: -325,
     marginTop: -30,
   },
   axisText: {
@@ -458,7 +496,7 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '-90deg' }],
     position: 'absolute',
     top: 140,
-    width: 100,
+    // width: 100,
   },
   arrowUp: {
     width: 0,
@@ -472,30 +510,25 @@ const styles = StyleSheet.create({
     borderRightColor: 'transparent',
     borderBottomColor: '#fff',
     position: 'absolute',
-    top: 150,
-    left: '53%',
-    transform: [{ translateX: -4 }],
+    top: 115,
+    left: '50%',
+    transform: [{ translateX: -3 }],
   },
-  gridContainer: {
+  chartWrapper: {
     flex: 1,
-    justifyContent: 'space-between',
+    marginLeft: 20,
+    marginTop: 20,
+    position: 'relative',
+    height: 260,
   },
-  gridRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 24,
-  },
-  yAxisValue: {
+  yAxisTextStyle: {
     color: '#aaa',
     fontSize: 11,
-    width: 30,
-    textAlign: 'right',
-    marginRight: 8,
+    marginRight: 5,
   },
-  gridLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#444',
+  xAxisTextStyle: {
+    color: '#aaa',
+    fontSize: 11,
   },
   xAxisContainer: {
     marginTop: 8,
@@ -503,8 +536,8 @@ const styles = StyleSheet.create({
   xAxisLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingLeft: 38,
-    paddingRight: 20,
+    paddingLeft: 60,
+    paddingRight: 40,
   },
   xAxisText: {
     color: '#aaa',
@@ -514,16 +547,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   xAxisLabel: {
     color: '#fff',
     fontSize: 12,
     marginRight: 4,
+    marginBottom: 4,
   },
   arrowRight: {
     width: 0,
     height: 0,
+    marginTop: -3,
     borderTopWidth: 4,
     borderBottomWidth: 4,
     borderLeftWidth: 8,
@@ -533,6 +571,37 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
     borderLeftColor: '#fff',
   },
+  // Tooltip styles
+  tooltipContainer: {
+    backgroundColor: '#FFFF99',
+    borderRadius: 8,
+    padding: 12,
+    minWidth: 180,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  tooltipTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  tooltipContent: {
+    gap: 4,
+  },
+  tooltipItem: {
+    fontSize: 12,
+    color: '#333333',
+    fontWeight: '500',
+  },
+  // Existing styles continue...
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -619,7 +688,6 @@ const styles = StyleSheet.create({
   footer: {
     marginTop: 24,
     marginLeft: 10,
-    // alignItems: 'center',
   },
   footerText: {
     color: '#fff',
@@ -636,4 +704,3 @@ const styles = StyleSheet.create({
     fontSize: 30,
   },
 });
-
