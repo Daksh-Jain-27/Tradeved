@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from 'expo-linear-gradient';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -11,19 +11,31 @@ import {
   View,
 } from "react-native";
 import QuizNavBar from "../../components/QuizNavBar";
+import { useAuth } from "../../lib/auth-context";
+import { socketManager } from "../../lib/socket";
 
-const question = {
-  text: "Which options strategy involves selling a call and put at the same strike price?",
-  options: ["Iron Condor", "Short Straddle", "Butterfly Spread", "Covered Call"],
-  correctAnswer: 1,
-};
+interface Question {
+  id: string;
+  text: string;
+  options: { id: string; text: string }[];
+  correctAnswerId: string;
+}
 
-const baseTimeForQ = (q: number) => Math.max(15, 30 - (q - 1) * 2);
+interface Player {
+  participantId: string;
+  userId: string;
+  username?: string;
+  avatarUrl?: string;
+}
 
 const LiveDuel: React.FC = () => {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const { isAuthenticated, userId, token } = useAuth();
+  
   const [timeLeft, setTimeLeft] = useState(30);
-  const [currentQuestion, setCurrentQuestion] = useState(1);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [yourScore, setYourScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const [opponentAnswered, setOpponentAnswered] = useState(false);
@@ -31,19 +43,67 @@ const LiveDuel: React.FC = () => {
   const [flashColor, setFlashColor] = useState<string | null>(null);
   const [powerUps, setPowerUps] = useState({ hint: 2, skip: 1, doubleXP: 1, extraTime: 1 });
   const [usedPowerUp, setUsedPowerUp] = useState<string | null>(null);
-  const [eliminatedOptions, setEliminatedOptions] = useState<number[]>([]);
-  const [pendingAchievements, setPendingAchievements] = useState<any[]>([]);
-  const [currentRating] = useState(1756);
+  const [eliminatedOptions, setEliminatedOptions] = useState<string[]>([]);
+  const [sessionId] = useState(params.sessionId as string);
+  const [players] = useState<Player[]>(JSON.parse(params.players as string));
+  const [gameStatus, setGameStatus] = useState<'playing' | 'finished'>('playing');
 
-  const baseTime = baseTimeForQ(currentQuestion);
+  // Add a function to calculate progress
+  const calculateProgress = (questionId: string | undefined) => {
+    if (!questionId) return 0;
+    const questionNumber = parseInt(questionId.split('-')[0] || '0', 10);
+    return (questionNumber / 10) * 100;
+  };
 
   useEffect(() => {
-    setTimeLeft(baseTime);
-  }, [currentQuestion, baseTime]);
+    if (!isAuthenticated) {
+      Alert.alert('Error', 'Authentication required');
+      router.back();
+      return;
+    }
+
+    const initializeGame = async () => {
+      try {
+        const myPlayer = players.find(p => p.userId === userId);
+        if (!myPlayer) {
+          Alert.alert('Error', 'Player information not found');
+          router.back();
+          return;
+        }
+
+        // Register as participant
+        socketManager.emit('game:register-participant', {
+          participantId: myPlayer.participantId,
+          sessionId: sessionId
+        });
+
+        // Setup game event listeners
+        socketManager.on('question:new', handleNewQuestion);
+        socketManager.on('score:update', handleScoreUpdate);
+        socketManager.on('game:end', handleGameEnd);
+        socketManager.on('powerup:hint-result', handleHintResult);
+        socketManager.on('opponent:answered', handleOpponentAnswer);
+      } catch (error) {
+        console.error('Game initialization error:', error);
+        Alert.alert('Error', 'Failed to initialize game');
+        router.back();
+      }
+    };
+
+    initializeGame();
+
+    return () => {
+      socketManager.off('question:new');
+      socketManager.off('score:update');
+      socketManager.off('game:end');
+      socketManager.off('powerup:hint-result');
+      socketManager.off('opponent:answered');
+    };
+  }, [isAuthenticated, userId, sessionId, players]);
 
   useEffect(() => {
     if (timeLeft <= 0) {
-      useRouter().push('/quiz-pages/post-match-results');
+      router.push('/quiz-pages/post-match-results');
       return;
     }
     const timer = setInterval(() => {
@@ -52,49 +112,66 @@ const LiveDuel: React.FC = () => {
     return () => clearInterval(timer);
   }, [timeLeft]);
 
-  const handleAnswerSelect = (index: number) => {
-    if (selectedAnswer !== null || eliminatedOptions.includes(index)) return;
-    setSelectedAnswer(index);
+  const handleNewQuestion = (question: Question) => {
+    setCurrentQuestion(question);
+    setSelectedAnswer(null);
+    setShowResult(false);
+    setOpponentAnswered(false);
+    setUsedPowerUp(null);
+    setEliminatedOptions([]);
+    setTimeLeft(30); // Reset timer for new question
+  };
+
+  const handleScoreUpdate = (scores: Record<string, number>) => {
+    if (!userId) return;
+    
+    const opponent = players.find(p => p.userId !== userId);
+    if (opponent) {
+      setOpponentScore(scores[opponent.participantId] || 0);
+    }
+    
+    const myPlayer = players.find(p => p.userId === userId);
+    if (myPlayer) {
+      setYourScore(scores[myPlayer.participantId] || 0);
+    }
+  };
+
+  const handleGameEnd = (data: { scores: Record<string, number> }) => {
+    setGameStatus('finished');
+    handleScoreUpdate(data.scores);
+    setTimeout(() => {
+      router.push('/quiz-pages/post-match-results');
+    }, 2000);
+  };
+
+  const handleHintResult = (data: { eliminatedOptionId: string }) => {
+    setEliminatedOptions(prev => [...prev, data.eliminatedOptionId]);
+  };
+
+  const handleOpponentAnswer = () => {
+    setOpponentAnswered(true);
+  };
+
+  const handleAnswerSelect = (optionId: string) => {
+    if (selectedAnswer !== null || eliminatedOptions.includes(optionId)) return;
+    
+    setSelectedAnswer(optionId);
     setShowResult(true);
-    const isCorrect = index === question.correctAnswer;
+    
+    const myPlayer = players.find(p => p.userId === userId);
+    if (!myPlayer) return;
+
+    socketManager.emit('answer:submit', {
+      sessionId,
+      participantId: myPlayer.participantId,
+      questionId: currentQuestion?.id,
+      optionId
+    });
+
+    // Visual feedback
+    const isCorrect = optionId === currentQuestion?.correctAnswerId;
     setFlashColor(isCorrect ? "#bbf7d0" : "#fee2e2");
     setTimeout(() => setFlashColor(null), 300);
-    if (isCorrect) {
-      const basePoints = 1;
-      const multiplier = usedPowerUp === "doubleXP" ? 2 : 1;
-      setYourScore((prev) => prev + basePoints * multiplier);
-      if (currentQuestion === 5) {
-        setPendingAchievements((prev) => [
-          ...prev,
-          {
-            type: "rating_improved",
-            data: {
-              oldRating: currentRating,
-              newRating: currentRating + 25,
-              xpGained: 50,
-            },
-          },
-        ]);
-        Alert.alert("Rating Improved!", "+25 ELO points earned");
-      }
-    }
-    setTimeout(() => {
-      setOpponentAnswered(true);
-      const opponentCorrect = Math.random() > 0.4;
-      if (opponentCorrect) setOpponentScore((prev) => prev + 1);
-      setTimeout(() => {
-        if (currentQuestion >= 10) {
-          useRouter().push('/quiz-pages/post-match-results');
-        } else {
-          setCurrentQuestion((prev) => prev + 1);
-          setSelectedAnswer(null);
-          setShowResult(false);
-          setOpponentAnswered(false);
-          setUsedPowerUp(null);
-          setEliminatedOptions([]);
-        }
-      }, 500);
-    }, 400);
   };
 
   const powerUpFunctions = {
@@ -102,34 +179,30 @@ const LiveDuel: React.FC = () => {
       if (powerUps.hint <= 0 || selectedAnswer !== null) return;
       setPowerUps((prev) => ({ ...prev, hint: prev.hint - 1 }));
       setUsedPowerUp("hint");
-      const wrongAnswers = question.options.map((_, index) => index).filter((index) => index !== question.correctAnswer);
-      const randomWrong = wrongAnswers[Math.floor(Math.random() * wrongAnswers.length)];
-      setEliminatedOptions([randomWrong]);
-      Alert.alert("Hint Used!", "One wrong answer eliminated");
+      // Request hint from server
+      socketManager.emit('powerup:hint', { sessionId });
     },
     skip: () => {
       if (powerUps.skip <= 0 || selectedAnswer !== null) return;
       setPowerUps((prev) => ({ ...prev, skip: prev.skip - 1 }));
-      setCurrentQuestion((prev) => prev + 1);
-      setSelectedAnswer(null);
-      setShowResult(false);
-      setOpponentAnswered(false);
+      socketManager.emit('question:skip', { 
+        sessionId,
+        participantId: players.find(p => p.userId === userId)?.participantId
+      });
       setUsedPowerUp("skip");
-      setEliminatedOptions([]);
-      Alert.alert("Question Skipped!", "Moving to next question");
     },
     extraTime: () => {
       if (powerUps.extraTime <= 0 || selectedAnswer !== null) return;
       setPowerUps((prev) => ({ ...prev, extraTime: prev.extraTime - 1 }));
       setTimeLeft((prev) => prev + 15);
       setUsedPowerUp("extraTime");
-      Alert.alert("Extra Time!", "+15 seconds added");
+      socketManager.emit('powerup:extraTime', { sessionId });
     },
     doubleXP: () => {
       if (powerUps.doubleXP <= 0 || selectedAnswer !== null) return;
       setPowerUps((prev) => ({ ...prev, doubleXP: prev.doubleXP - 1 }));
       setUsedPowerUp("doubleXP");
-      Alert.alert("Double XP Active!", "Next correct answer gives 2x points");
+      socketManager.emit('powerup:doubleXP', { sessionId });
     },
   };
 
@@ -144,7 +217,11 @@ const LiveDuel: React.FC = () => {
       <ScrollView style={[styles.container, flashColor ? { backgroundColor: flashColor } : {}]} contentContainerStyle={{ paddingBottom: 40 }}>
         {/* Header */}
         <View style={styles.headerRow}>
-          <View style={styles.badgeOutline}><Text style={styles.badgeText}>Round {currentQuestion}/10</Text></View>
+          <View style={styles.badgeOutline}>
+            <Text style={styles.badgeText}>
+              Round {currentQuestion?.id ? parseInt(currentQuestion.id.split('-')[0] || '0', 10) : 0}/10
+            </Text>
+          </View>
           <View style={{ alignItems: "center" }}>
             <Feather name="clock" size={22} color="#94a3b8" />
             <View style={styles.timerCircle}><Text style={styles.timerText}>{timeLeft}s</Text></View>
@@ -155,18 +232,18 @@ const LiveDuel: React.FC = () => {
         </View>
         {/* Progress */}
         <View style={styles.progressBarWrap}>
-          <View style={[styles.progressBar, { width: `${(currentQuestion / 10) * 100}%` }]} />
+          <View style={[styles.progressBar, { width: `${calculateProgress(currentQuestion?.id)}%` }]} />
         </View>
         {/* Question */}
         <LinearGradient
           colors={['rgba(163, 230, 53, 0.1)', 'rgba(56, 189, 248, 0.1)']}
           style={styles.card}
         >
-          <Text style={styles.questionText}>{question.text}</Text>
-          {question.options.map((option, index) => {
-            const isEliminated = eliminatedOptions.includes(index);
-            const isSelected = selectedAnswer === index;
-            const isCorrect = index === question.correctAnswer;
+          <Text style={styles.questionText}>{currentQuestion?.text}</Text>
+          {currentQuestion?.options.map((option) => {
+            const isEliminated = eliminatedOptions.includes(option.id);
+            const isSelected = selectedAnswer === option.id;
+            const isCorrect = option.id === currentQuestion?.correctAnswerId;
             let btnStyle = [styles.answerButton];
             if (isEliminated) btnStyle.push(styles.answerEliminated);
             else if (selectedAnswer === null) btnStyle.push(styles.answerDefault);
@@ -174,15 +251,16 @@ const LiveDuel: React.FC = () => {
             else if (isSelected && !isCorrect) btnStyle.push(styles.answerWrong);
             else if (isCorrect && showResult) btnStyle.push(styles.answerCorrect);
             else if (selectedAnswer !== null) btnStyle.push(styles.answerDim);
+
             return (
               <TouchableOpacity
-                key={index}
+                key={option.id}
                 style={btnStyle}
-                onPress={() => handleAnswerSelect(index)}
+                onPress={() => handleAnswerSelect(option.id)}
                 disabled={selectedAnswer !== null || isEliminated}
               >
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-                  <Text style={[styles.answerText, isEliminated && styles.answerTextEliminated]}>{option}</Text>
+                  <Text style={[styles.answerText, isEliminated && styles.answerTextEliminated]}>{option.text}</Text>
                   {showResult && isSelected && (
                     isCorrect ? (
                       <Feather name="check-circle" size={20} color="#A3E635" />
@@ -190,7 +268,7 @@ const LiveDuel: React.FC = () => {
                       <Feather name="x" size={20} color="#ef4444" />
                     )
                   )}
-                  {showResult && isCorrect && selectedAnswer !== index && (
+                  {showResult && isCorrect && selectedAnswer !== option.id && (
                     <Feather name="check-circle" size={20} color="#A3E635" />
                   )}
                 </View>

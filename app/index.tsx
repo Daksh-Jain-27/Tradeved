@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Checkbox from 'expo-checkbox';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -17,6 +16,7 @@ import {
   useColorScheme,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useAuth } from '../lib/auth-context';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const scale = SCREEN_WIDTH / 375; // Using 375 as base width (iPhone standard)
@@ -39,6 +39,7 @@ const LoginSignupScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; email: string; password: string }>({ email: '', password: '' });
   const colorScheme = useColorScheme();
+  const { login } = useAuth();
 
   const router = useRouter();
 
@@ -66,13 +67,29 @@ const LoginSignupScreen = () => {
       });
       
       const data = await response.json();
+      console.log('Login API Response:', JSON.stringify(data, null, 2));
+      
       if (!response.ok) {
         alert(data.message || 'Login failed!');
         return;
       }
-  
-      // Store token
-       await AsyncStorage.setItem('authToken', data.data.token);  
+
+      // Validate required auth data exists
+      if (!data.data?.token) {
+        console.error('Invalid auth data received:', data);
+        alert('Invalid authentication data received from server');
+        return;
+      }
+
+      // Extract user ID from JWT token
+      const token = data.data.token;
+      const tokenParts = token.split('.');
+      const payload = JSON.parse(atob(tokenParts[1]));
+      const userId = payload.id;
+
+      // Store auth data using auth context with validated data
+      await login(userId, token);
+      
       // Redirect to onboarding
       router.replace('/onboarding');
   
@@ -108,17 +125,31 @@ const LoginSignupScreen = () => {
       });
       
       const data = await response.json();
+      console.log('Signup API Response:', JSON.stringify(data, null, 2));
+      
       if (!response.ok) {
         alert(data.message || 'Signup failed!');
         return;
       }
-  
-      // ✅ Store token
-      // const token = await AsyncStorage.setItem('authToken', data.token); // or data.accessToken depending on API response
-      // console.log(token);
-  
+
+      // Validate required auth data exists
+      if (!data.data?.token) {
+        console.error('Invalid auth data received:', data);
+        alert('Invalid authentication data received from server');
+        return;
+      }
+
+      // Extract user ID from JWT token
+      const token = data.data.token;
+      const tokenParts = token.split('.');
+      const payload = JSON.parse(atob(tokenParts[1]));
+      const userId = payload.id;
+
+      // Store auth data using auth context with validated data
+      await login(userId, token);
+      
       // Redirect to onboarding
-      // router.replace('/onboarding');
+      router.replace('/onboarding');
   
     } catch (error) {
       console.error('Signup error:', error);
