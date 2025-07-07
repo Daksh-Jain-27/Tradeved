@@ -1,19 +1,20 @@
 import { Feather, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Image, Platform, ScrollView,
+  Image,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
-} from 'react-native';
+  View,
+} from "react-native";
 import QuizNavBar from "../../../components/QuizNavBar";
 import { AnimatedCounter } from "../../../components/ui/AnimatedCounter";
-import { useAuth } from "../../../lib/auth-context";
-import { socketManager } from "../../../lib/socket";
+import { socket } from "../../../lib/socket";
 
 // Color palette from tailwind.config.ts
 const colors = {
@@ -96,177 +97,91 @@ const recentOpponents = [
   },
 ];
 
-// API configuration
-const API_BASE_URL = Platform.select({
-  web: 'https://cors-anywhere.herokuapp.com/http://94.136.190.104:3000', // Use CORS proxy for web
-  default: 'http://94.136.190.104:3000' // Direct URL for native
-});
-
 export default function DuelsLobbyScreen() {
   const [selectedDifficulty, setSelectedDifficulty] = useState("intermediate");
   const [isSearching, setIsSearching] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(socket.connected);
+  const [authToken, setAuthToken] = useState<string | null>(null);
   const router = useRouter();
-  const { isAuthenticated, userId, token } = useAuth();
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      setErrorMessage('Please login to continue');
-      return;
-    }
-
-    if (!userId || !token) {
-      setErrorMessage('Authentication data missing');
-      return;
-    }
-
-    const initializeSocket = async () => {
+    // Load auth token
+    const loadAuthToken = async () => {
       try {
-        console.log('Initializing socket with:', { userId, hasToken: !!token });
-        
-        // Initialize socket with auth info
-        socketManager.initialize(userId, token);
-        
-        // Setup socket event listeners
-        socketManager.on('connect', () => {
-          console.log('Socket connected successfully');
-          setIsConnected(true);
-          setErrorMessage(null);
-        });
-
-        socketManager.on('disconnect', () => {
-          console.log('Socket disconnected');
-          setIsConnected(false);
-          setErrorMessage('Disconnected from game server');
-        });
-
-        socketManager.on('connect_error', (error: Error) => {
-          console.error('Socket connection error:', error);
-          setErrorMessage(`Connection Error: ${error.message}`);
-          setIsConnected(false);
-        });
-
-        socketManager.on('match:found', (data: { sessionId: string; players: any[]; duration: number }) => {
-          console.log('Match found:', data);
-          setIsSearching(false);
-          router.push({
-            pathname: '/quiz-pages/live-duel',
-            params: {
-              sessionId: data.sessionId,
-              players: JSON.stringify(data.players),
-              duration: data.duration
-            }
-          });
-        });
-
-        socketManager.on('match:error', (error: { message: string }) => {
-          console.error('Match error:', error);
-          setIsSearching(false);
-          setErrorMessage(error.message);
-          Alert.alert('Match Error', error.message);
-        });
+        const token = await AsyncStorage.getItem('authToken');
+        setAuthToken(token);
+        if (token && !socket.connected) {
+          socket.connect();
+        }
       } catch (error) {
-        console.error('Socket initialization error:', error);
-        setErrorMessage('Failed to initialize game connection');
+        console.error('Error loading auth token:', error);
       }
     };
+    loadAuthToken();
 
-    initializeSocket();
+    // Socket event listeners
+    const onConnect = () => setIsConnected(true);
+    const onDisconnect = () => setIsConnected(false);
+    const onMatchFound = (data: { sessionId: string; players: any[]; duration: number }) => {
+      setIsSearching(false);
+      router.push({
+        pathname: '/quiz-pages/live-duel',
+        params: { 
+          sessionId: data.sessionId,
+          players: JSON.stringify(data.players),
+          duration: data.duration
+        }
+      });
+    };
+
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    socket.on('match:found', onMatchFound);
 
     return () => {
-      console.log('Cleaning up socket listeners');
-      socketManager.off('connect');
-      socketManager.off('disconnect');
-      socketManager.off('connect_error');
-      socketManager.off('match:found');
-      socketManager.off('match:error');
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      socket.off('match:found', onMatchFound);
     };
-  }, [isAuthenticated, userId, token]);
+  }, [router]);
 
   const handleQuickMatch = async () => {
-    if (!isAuthenticated) {
+    if (!authToken) {
       Alert.alert('Error', 'Please login to continue');
       return;
     }
 
+    setIsSearching(true);
     try {
-      setIsSearching(true);
-      setErrorMessage(null);
-
-      console.log('Making matchmaking request with:', {
-        userId,
-        hasToken: !!token,
-        difficulty: selectedDifficulty,
-        platform: Platform.OS
-      });
-
-      // Call the matchmaking API
-      const response = await fetch(`${API_BASE_URL}/api/duel/find-match`, {
+      const response = await fetch('http://94.136.190.104:3000/api/duel/find-match', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          // Add additional headers for web platform
-          ...(Platform.OS === 'web' ? {
-            'Origin': 'http://localhost:8081',
-            'X-Requested-With': 'XMLHttpRequest'
-          } : {})
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({
           duration: 2, // 2 minutes default
-          difficulty: selectedDifficulty,
-          userId: userId
-        })
+        }),
       });
-
-      const data = await response.json();
-      console.log('Matchmaking API response:', data);
-
+      console.log(response);
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to find match');
+        throw new Error('Failed to find match');
       }
 
-      // The socket will handle the match:found event
-    } catch (error: any) {
+      // Server will emit 'match:found' event when match is found
+    } catch (error) {
+      console.error('Error finding match:', error);
       setIsSearching(false);
-      setErrorMessage(error.message);
-      console.error('Matchmaking error:', error);
-      
-      // More descriptive error message for users
-      if (error.message.includes('Failed to fetch')) {
-        Alert.alert(
-          'Connection Error',
-          Platform.OS === 'web' 
-            ? 'Unable to connect to the game server. Please try using the mobile app for the best experience.'
-            : 'Unable to connect to the game server. Please check your internet connection and try again.'
-        );
-      } else {
-        Alert.alert('Error', error.message);
-      }
+      Alert.alert('Error', 'Failed to find match. Please try again.');
     }
   };
 
   const handleSelectDifficulty = (difficultyId: string) => {
     setSelectedDifficulty(difficultyId);
-  };
-
-  // Add a login button if not authenticated
-  if (!isAuthenticated) {
-    return (
-      <>
-        <QuizNavBar />
-        <View style={styles.container}>
-          <Text style={styles.errorText}>Please login to continue</Text>
-          <TouchableOpacity 
-            style={styles.loginButton}
-            onPress={() => router.push('/onboarding')} // Adjust this path to your login screen
-          >
-            <Text style={styles.loginButtonText}>Login</Text>
-          </TouchableOpacity>
-        </View>
-      </>
-    );
+    // Navigate to a specific lobby
+    setTimeout(() => {
+      router.push(`/quiz-pages/duel-lobby?difficulty=${difficultyId}`);
+    }, 500);
   }
 
   return (
@@ -293,6 +208,12 @@ export default function DuelsLobbyScreen() {
             <Feather name="settings" size={20} color={colors["muted-foreground"]} />
           </TouchableOpacity>
         </View>
+
+        {!isConnected && (
+          <View style={styles.connectionWarning}>
+            <Text style={styles.warningText}>Connecting to game server...</Text>
+          </View>
+        )}
 
         {/* Player Stats */}
         <View style={styles.playerStatsCard}>
@@ -329,7 +250,14 @@ export default function DuelsLobbyScreen() {
         </View>
 
         {/* Quick Match Button */}
-        <TouchableOpacity onPress={handleQuickMatch} disabled={isSearching} style={styles.quickMatchButton}>
+        <TouchableOpacity 
+          onPress={handleQuickMatch} 
+          disabled={isSearching || !isConnected} 
+          style={[
+            styles.quickMatchButton,
+            (!isConnected || !authToken) && styles.disabledButton
+          ]}
+        >
           {isSearching ? (
             <>
               <ActivityIndicator size="small" color="#000" style={{ marginRight: 12 }} />
@@ -459,22 +387,19 @@ const styles = StyleSheet.create({
   resultBadgeText: { fontWeight: 'bold' },
   rematchButton: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10 },
   rematchButtonText: { color: colors.foreground, fontSize: 13, fontWeight: '500' },
-  errorText: {
-    color: colors["royal-red"],
-    fontSize: 16,
-    textAlign: 'center',
-    marginVertical: 20,
-  },
-  loginButton: {
-    backgroundColor: colors["mango-green"],
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+  connectionWarning: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    padding: 12,
     borderRadius: 8,
-    alignSelf: 'center',
+    marginBottom: 16,
   },
-  loginButtonText: {
-    color: colors["mango-green-foreground"],
-    fontSize: 16,
-    fontWeight: 'bold',
+  warningText: {
+    color: '#ef4444',
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });

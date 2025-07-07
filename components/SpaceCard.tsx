@@ -95,6 +95,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginTop: 4,
     marginBottom: -8,
+    marginHorizontal: -10,
   },
   categoryContainer: {
     flexDirection: 'row',
@@ -102,6 +103,7 @@ const styles = StyleSheet.create({
     gap: 4,
     alignSelf: 'flex-start',
     marginTop: 4,
+    marginHorizontal: -10,
   },
   categoryPill: {
     backgroundColor: '#9BEC00',

@@ -16,7 +16,14 @@ import {
   useColorScheme,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useAuth } from '../lib/auth-context';
+import AuthService from '../lib/services/auth.service';
+
+// Define the shape of the decoded JWT payload
+interface DecodedToken {
+  id: string; // This is the user ID
+  iat: number;
+  exp: number;
+}
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const scale = SCREEN_WIDTH / 375; // Using 375 as base width (iPhone standard)
@@ -38,8 +45,8 @@ const LoginSignupScreen = () => {
   const [agree, setAgree] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; email: string; password: string }>({ email: '', password: '' });
+  const [loading, setLoading] = useState(false);
   const colorScheme = useColorScheme();
-  const { login } = useAuth();
 
   const router = useRouter();
 
@@ -48,54 +55,26 @@ const LoginSignupScreen = () => {
       email: email.trim() === '' ? 'Email is required!' : '',
       password: password.trim() === '' ? 'Password is required!' : '',
     };
-  
+
     setErrors(newErrors);
-  
+
     const hasErrors = Object.values(newErrors).some((err) => err !== '');
     if (hasErrors) return;
-  
+
+    setLoading(true);
     try {
-      const response = await fetch('https://api.dev.tradeved.com/user/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      });
+      const result = await AuthService.login(email, password);
       
-      const data = await response.json();
-      console.log('Login API Response:', JSON.stringify(data, null, 2));
-      
-      if (!response.ok) {
-        alert(data.message || 'Login failed!');
-        return;
+      if (result.success && result.data?.token) {
+        router.replace('/onboarding');
+      } else {
+        alert(result.message || 'Login failed!');
       }
-
-      // Validate required auth data exists
-      if (!data.data?.token) {
-        console.error('Invalid auth data received:', data);
-        alert('Invalid authentication data received from server');
-        return;
-      }
-
-      // Extract user ID from JWT token
-      const token = data.data.token;
-      const tokenParts = token.split('.');
-      const payload = JSON.parse(atob(tokenParts[1]));
-      const userId = payload.id;
-
-      // Store auth data using auth context with validated data
-      await login(userId, token);
-      
-      // Redirect to onboarding
-      router.replace('/onboarding');
-  
     } catch (error) {
       console.error('Login error:', error);
       alert('Something went wrong. Please try again later.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -105,12 +84,13 @@ const LoginSignupScreen = () => {
       email: email.trim() === '' ? 'Email is required!' : '',
       password: password.trim() === '' ? 'Password is required!' : '',
     };
-  
+
     setErrors(newErrors);
-  
+
     const hasErrors = Object.values(newErrors).some((err) => err !== '');
     if (hasErrors) return;
-  
+
+    setLoading(true);
     try {
       const response = await fetch('https://api.dev.tradeved.com/user/auth/sign-up', {
         method: 'POST',
@@ -123,47 +103,37 @@ const LoginSignupScreen = () => {
           password,
         }),
       });
-      
+
       const data = await response.json();
-      console.log('Signup API Response:', JSON.stringify(data, null, 2));
-      
       if (!response.ok) {
         alert(data.message || 'Signup failed!');
         return;
       }
 
-      // Validate required auth data exists
-      if (!data.data?.token) {
-        console.error('Invalid auth data received:', data);
-        alert('Invalid authentication data received from server');
-        return;
+      // After successful signup, automatically log them in
+      const loginResult = await AuthService.login(email, password);
+      if (loginResult.success) {
+        router.replace('/onboarding');
+      } else {
+        alert('Signup successful! Please log in.');
+        setIsLogin(true);
       }
 
-      // Extract user ID from JWT token
-      const token = data.data.token;
-      const tokenParts = token.split('.');
-      const payload = JSON.parse(atob(tokenParts[1]));
-      const userId = payload.id;
-
-      // Store auth data using auth context with validated data
-      await login(userId, token);
-      
-      // Redirect to onboarding
-      router.replace('/onboarding');
-  
     } catch (error) {
       console.error('Signup error:', error);
       alert('Something went wrong. Please try again later.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <SafeAreaView style={[styles.container, colorScheme === 'dark' && styles.containerDark]}>
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -179,13 +149,13 @@ const LoginSignupScreen = () => {
               {isLogin ? 'Welcome Back!' : 'Connect with us'}
             </Text>
             <Text style={[styles.subtitle, colorScheme === 'dark' && styles.textGray]}>
-              {isLogin 
+              {isLogin
                 ? 'Enter your credentials to continue your trading journey.'
                 : 'Enter your credentials to get started with your trading journey.'}
             </Text>
 
             <View style={styles.socialButtons}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
                   styles.socialButton,
                   colorScheme === 'dark' && styles.buttonDark
@@ -203,7 +173,7 @@ const LoginSignupScreen = () => {
                 </View>
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
                   styles.socialButton,
                   colorScheme === 'dark' && styles.buttonDark
@@ -283,8 +253,8 @@ const LoginSignupScreen = () => {
 
               {!isLogin && (
                 <View style={styles.checkboxContainer}>
-                  <Checkbox 
-                    value={agree} 
+                  <Checkbox
+                    value={agree}
                     onValueChange={setAgree}
                     color={agree ? '#9BEC00' : undefined}
                   />
@@ -294,11 +264,11 @@ const LoginSignupScreen = () => {
                 </View>
               )}
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
                   styles.loginButton,
                   !isLogin && !agree && styles.disabledButton
-                ]} 
+                ]}
                 onPress={isLogin ? handleLogin : handleSignup}
                 disabled={!isLogin && !agree}
               >
@@ -310,7 +280,7 @@ const LoginSignupScreen = () => {
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.switchModeContainer}
                 onPress={() => setIsLogin(!isLogin)}
               >
