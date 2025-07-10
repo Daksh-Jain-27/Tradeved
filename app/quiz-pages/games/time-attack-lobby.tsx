@@ -1,18 +1,18 @@
+import {
+    Feather
+} from "@expo/vector-icons";
+import { Stack, useRouter } from 'expo-router';
 import React, { useState } from "react";
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    ScrollView,
     Alert,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import {
-    Feather,
-    MaterialCommunityIcons,
-} from "@expo/vector-icons";
 import QuizNavBar from "../../../components/QuizNavBar";
-import { Stack, useRouter } from 'expo-router';
 
 // APPROXIMATED COLORS - These were likely defined in the web project's tailwind.config.ts
 const colors = {
@@ -30,6 +30,20 @@ const colors = {
     "mango-green-foreground": "#FFFFFF",
 };
 
+// Game difficulty options
+const difficultyOptions = [
+    { id: "EASY", label: "Easy", description: "Basic concepts and fundamentals" },
+    { id: "MEDIUM", label: "Medium", description: "Intermediate level questions" },
+    { id: "HARD", label: "Hard", description: "Advanced concepts and strategies" }
+];
+
+// Time limit options
+const timeLimitOptions = [
+    { id: 1, label: "1 Minute", description: "Quick sprint" },
+    { id: 2, label: "2 Minutes", description: "Standard challenge" },
+    { id: 5, label: "5 Minutes", description: "Extended session" }
+];
+
 // MOCK DATA - Same as the web version
 const gameModes = [
     { id: "sprint", title: "Sprint Mode", subtitle: "3 minutes of intensity", description: "Answer as many questions as possible in 3 minutes", duration: "3 min", questions: "Unlimited", difficulty: "Mixed", xpRange: "25-100 XP", color: "middle-yellow", isPopular: true },
@@ -45,7 +59,6 @@ const leaderboard = [
     { rank: 5, name: "FastFingers", score: 2401, streak: 5 },
 ];
 
-
 // MOCK AnimatedCounter since the original component is also broken without dependencies.
 const AnimatedCounter = ({ value, style }: { value: number, style?: any }) => (
     <Text style={style}>{value}</Text>
@@ -55,7 +68,26 @@ export default function TimeAttackLobbyScreen() {
     const [selectedMode, setSelectedMode] = useState("sprint");
     const [personalBest] = useState(2489);
     const [todayStreak] = useState(7);
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const [selectedDifficulty, setSelectedDifficulty] = useState("EASY");
+    const [selectedTimeLimit, setSelectedTimeLimit] = useState(60);
     const router = useRouter();
+
+    const handleStartGame = () => {
+        setShowSettingsModal(true);
+    };
+
+    const handleConfirmSettings = () => {
+        setShowSettingsModal(false);
+        router.push({
+            pathname: '/quiz-pages/games/time-attack-game',
+            params: {
+                mode: selectedMode,
+                difficulty: selectedDifficulty,
+                durationMinutes: selectedTimeLimit
+            }
+        });
+    };
 
     return (
         <>
@@ -139,8 +171,8 @@ export default function TimeAttackLobbyScreen() {
                     ))}
                 </View>
 
-                {/* Start Game */}
-                <TouchableOpacity style={styles.glowingButton} onPress={() => router.push(`/quiz-pages/games/time-attack-game?mode=${selectedMode}`)}>
+                {/* Start Game Button */}
+                <TouchableOpacity style={styles.glowingButton} onPress={handleStartGame}>
                     <Feather name="play" size={24} color={colors.background} style={{ marginRight: 12 }} />
                     <Text style={styles.glowingButtonText}>Start Time Attack</Text>
                 </TouchableOpacity>
@@ -175,6 +207,80 @@ export default function TimeAttackLobbyScreen() {
                     </View>
                 </View>
 
+                {/* Settings Modal */}
+                <Modal
+                    visible={showSettingsModal}
+                    transparent={true}
+                    animationType="fade"
+                    onRequestClose={() => setShowSettingsModal(false)}
+                >
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContent}>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>Game Settings</Text>
+                                <TouchableOpacity onPress={() => setShowSettingsModal(false)}>
+                                    <Feather name="x" size={24} color={colors.foreground} />
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={styles.settingsSection}>
+                                <Text style={styles.settingsTitle}>Difficulty</Text>
+                                <View style={styles.optionsGrid}>
+                                    {difficultyOptions.map((option) => (
+                                        <TouchableOpacity
+                                            key={option.id}
+                                            style={[
+                                                styles.optionButton,
+                                                selectedDifficulty === option.id && styles.selectedOption
+                                            ]}
+                                            onPress={() => setSelectedDifficulty(option.id)}
+                                        >
+                                            <Text style={[
+                                                styles.optionLabel,
+                                                selectedDifficulty === option.id && styles.selectedOptionText
+                                            ]}>
+                                                {option.label}
+                                            </Text>
+                                            <Text style={styles.optionDescription}>{option.description}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+
+                            <View style={styles.settingsSection}>
+                                <Text style={styles.settingsTitle}>Time Limit</Text>
+                                <View style={styles.optionsGrid}>
+                                    {timeLimitOptions.map((option) => (
+                                        <TouchableOpacity
+                                            key={option.id}
+                                            style={[
+                                                styles.optionButton,
+                                                selectedTimeLimit === option.id && styles.selectedOption
+                                            ]}
+                                            onPress={() => setSelectedTimeLimit(option.id)}
+                                        >
+                                            <Text style={[
+                                                styles.optionLabel,
+                                                selectedTimeLimit === option.id && styles.selectedOptionText
+                                            ]}>
+                                                {option.label}
+                                            </Text>
+                                            <Text style={styles.optionDescription}>{option.description}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+
+                            <TouchableOpacity
+                                style={styles.startButton}
+                                onPress={handleConfirmSettings}
+                            >
+                                <Text style={styles.startButtonText}>Start Game</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
+
             </ScrollView>
         </>
     );
@@ -206,4 +312,81 @@ const styles = StyleSheet.create({
     timerBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: colors['middle-yellow'] },
     playerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 8, borderRadius: 8, marginVertical: 4 },
     rankCircle: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+
+    // New styles for the modal
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    modalContent: {
+        backgroundColor: colors.background,
+        borderRadius: 16,
+        padding: 24,
+        width: '100%',
+        maxWidth: 500,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    modalTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: colors.foreground,
+    },
+    settingsSection: {
+        marginBottom: 24,
+    },
+    settingsTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: colors.foreground,
+        marginBottom: 16,
+    },
+    optionsGrid: {
+        gap: 12,
+    },
+    optionButton: {
+        padding: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.card,
+    },
+    selectedOption: {
+        borderColor: colors.primary,
+        backgroundColor: `${colors.primary}20`,
+    },
+    optionLabel: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: colors.foreground,
+        marginBottom: 4,
+    },
+    selectedOptionText: {
+        color: colors.primary,
+    },
+    optionDescription: {
+        fontSize: 14,
+        color: colors["muted-foreground"],
+    },
+    startButton: {
+        backgroundColor: colors.primary,
+        padding: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        marginTop: 8,
+    },
+    startButtonText: {
+        color: colors.background,
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
 }); 

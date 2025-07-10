@@ -3,6 +3,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Stack, useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import {
+  Alert,
   Modal,
   SafeAreaView,
   ScrollView,
@@ -131,8 +132,14 @@ const PracticeTopicCard: React.FC<PracticeTopicCardProps> = ({ topic, onStart })
             <Text style={styles.topicDescription}>{topic.description}</Text>
 
             <View style={styles.topicMetaContainer}>
-              <Text style={styles.topicMetaText}><Icon name="book-open" size={12} /> {topic.questions} questions</Text>
-              <Text style={styles.topicMetaText}><Icon name="clock" size={12} /> {topic.estimatedTime}</Text>
+              <View style={styles.topicMetaItem}>
+                <Icon name="book-open" size={12} />
+                <Text style={styles.topicMetaText}> {topic.questions} questions</Text>
+              </View>
+              <View style={styles.topicMetaItem}>
+                <Icon name="clock" size={12} />
+                <Text style={styles.topicMetaText}> {topic.estimatedTime}</Text>
+              </View>
             </View>
 
             <View style={styles.topicTagsContainer}>
@@ -191,6 +198,15 @@ export default function PracticeHub() {
   const [topicsY, setTopicsY] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
+  
+  // Add new state for setup modal
+  const [setupModalVisible, setSetupModalVisible] = useState(false);
+  const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
+  const [setupConfig, setSetupConfig] = useState({
+    numQuestions: 10,
+    difficulty: "EASY",
+    selectedTopics: [] as string[],
+  });
 
   const [filters, setFilters] = useState<Filters>({
     difficulty: ["Beginner", "Intermediate", "Advanced"],
@@ -230,7 +246,31 @@ export default function PracticeHub() {
   };
 
   const startPractice = (topicId: number, mode: string) => {
-    router.push({ pathname: '/quiz-pages/practice-session', params: { topic: topicId, mode } });
+    const selectedTopic = practiceTopicsData.find(t => t.id === topicId);
+    if (!selectedTopic) {
+      Alert.alert('Error', 'Topic not found');
+      return;
+    }
+    
+    setSelectedTopicId(topicId);
+    setSetupConfig({
+      numQuestions: selectedTopic.questions,
+      difficulty: selectedTopic.difficulty.toUpperCase(),
+      selectedTopics: selectedTopic.tags,
+    });
+    setSetupModalVisible(true);
+  };
+
+  const handleStartPractice = () => {
+    setSetupModalVisible(false);
+    router.push({
+      pathname: '/quiz-pages/practice-session',
+      params: {
+        difficulty: setupConfig.difficulty,
+        categories: JSON.stringify(setupConfig.selectedTopics),
+        numQuestions: setupConfig.numQuestions,
+      }
+    });
   };
 
   const resetFilters = () => {
@@ -389,6 +429,108 @@ export default function PracticeHub() {
             </View>
           </View>
         </Modal>
+
+        {/* Setup Modal */}
+        <Modal
+          visible={setupModalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setSetupModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Practice Setup</Text>
+              <Text style={styles.modalDescription}>Customize your practice session</Text>
+
+              <ScrollView>
+                {/* Number of Questions */}
+                <View style={styles.setupGroup}>
+                  <Text style={styles.setupLabel}>Number of Questions</Text>
+                  <View style={styles.setupInputContainer}>
+                    <TouchableOpacity
+                      style={styles.setupButton}
+                      onPress={() => setSetupConfig(prev => ({
+                        ...prev,
+                        numQuestions: Math.max(1, prev.numQuestions - 5)
+                      }))}
+                    >
+                      <Text style={styles.setupButtonText}>-</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.setupValue}>{setupConfig.numQuestions}</Text>
+                    <TouchableOpacity
+                      style={styles.setupButton}
+                      onPress={() => setSetupConfig(prev => ({
+                        ...prev,
+                        numQuestions: Math.min(50, prev.numQuestions + 5)
+                      }))}
+                    >
+                      <Text style={styles.setupButtonText}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Difficulty */}
+                <View style={styles.setupGroup}>
+                  <Text style={styles.setupLabel}>Difficulty</Text>
+                  <View style={styles.difficultyButtons}>
+                    {["EASY", "MEDIUM", "HARD"].map((diff) => (
+                      <TouchableOpacity
+                        key={diff}
+                        style={[
+                          styles.difficultyButton,
+                          setupConfig.difficulty === diff && styles.difficultyButtonActive
+                        ]}
+                        onPress={() => setSetupConfig(prev => ({ ...prev, difficulty: diff }))}
+                      >
+                        <Text style={[
+                          styles.difficultyButtonText,
+                          setupConfig.difficulty === diff && styles.difficultyButtonTextActive
+                        ]}>
+                          {diff}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                {/* Topics */}
+                <View style={styles.setupGroup}>
+                  <Text style={styles.setupLabel}>Topics</Text>
+                  <View style={styles.topicsGrid}>
+                    {setupConfig.selectedTopics.map((topic, index) => (
+                      <View key={index} style={styles.topicChip}>
+                        <Text style={styles.topicChipText}>{topic}</Text>
+                        <TouchableOpacity
+                          onPress={() => setSetupConfig(prev => ({
+                            ...prev,
+                            selectedTopics: prev.selectedTopics.filter(t => t !== topic)
+                          }))}
+                        >
+                          <Icon name="x" size={16} color="#fff" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              </ScrollView>
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={[styles.button, styles.cancelButton]}
+                  onPress={() => setSetupModalVisible(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.button, styles.startButton]}
+                  onPress={handleStartPractice}
+                >
+                  <Text style={styles.startButtonText}>Start Practice</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </>
   );
@@ -442,7 +584,12 @@ const styles = StyleSheet.create({
   completedBadgeText: { color: '#A3E635', fontSize: 10, fontWeight: 'bold' },
   topicDescription: { fontSize: 14, color: '#9CA3AF', marginVertical: 8 },
   topicMetaContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  topicMetaText: { color: '#9CA3AF', fontSize: 12, marginRight: 16 },
+  topicMetaItem: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginRight: 16 
+  },
+  topicMetaText: { color: '#9CA3AF', fontSize: 12 },
   topicTagsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   tagBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12, borderWidth: 1, borderColor: '#4B5563' },
   tagBadgeText: { color: '#D1D5DB', fontSize: 12 },
@@ -458,4 +605,109 @@ const styles = StyleSheet.create({
   progressBox: { flex: 1, backgroundColor: '#11182750', borderRadius: 8, padding: 8, alignItems: 'center', marginHorizontal: 4 },
   progressLabel: { color: '#9CA3AF', fontSize: 12 },
   progressValue: { color: '#FFF', fontWeight: '600', fontSize: 16 },
+
+  // Setup Modal Styles
+  setupGroup: {
+    marginBottom: 24,
+  },
+  setupLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#FFF',
+    marginBottom: 12,
+  },
+  setupInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderRadius: 8,
+    padding: 8,
+  },
+  setupButton: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#A3E635',
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  setupButtonText: {
+    fontSize: 20,
+    color: '#000',
+    fontWeight: 'bold',
+  },
+  setupValue: {
+    fontSize: 18,
+    color: '#FFF',
+    marginHorizontal: 20,
+    minWidth: 40,
+    textAlign: 'center',
+  },
+  difficultyButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  difficultyButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#4B5563',
+  },
+  difficultyButtonActive: {
+    backgroundColor: '#A3E635',
+    borderColor: '#A3E635',
+  },
+  difficultyButtonText: {
+    color: '#FFF',
+    fontWeight: '500',
+  },
+  difficultyButtonTextActive: {
+    color: '#000',
+  },
+  topicsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  topicChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(163, 230, 53, 0.2)',
+    borderRadius: 16,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  topicChipText: {
+    color: '#FFF',
+    fontSize: 14,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#4B5563',
+  },
+  cancelButtonText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+  },
+  startButton: {
+    flex: 1,
+    backgroundColor: '#A3E635',
+  },
+  startButtonText: {
+    color: '#000',
+    fontWeight: 'bold',
+  },
 }); 
