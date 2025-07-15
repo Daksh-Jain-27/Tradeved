@@ -34,7 +34,7 @@ export default function TabLayout() {
 
   // Custom tab bar button to prevent navigation for locked tabs
   function CustomTabBarButton({ routeName, children, ...props }: any) {
-    const locked = ['PaperTrading',].includes(routeName);
+    const locked = [''].includes(routeName);
     return (
       <HapticTab
         {...props}
@@ -61,7 +61,7 @@ export default function TabLayout() {
         tabBarStyle: { backgroundColor: '#232823', borderTopWidth: 0, height: 80, paddingTop: 16, },
         tabBarShowLabel: false,
         tabBarIcon: ({ focused }) => {
-          const locked = ['PaperTrading', ].includes(route.name);
+          const locked = [''].includes(route.name);
           return <TabIcon name={route.name as TabName} focused={focused} locked={locked} style={{ marginLeft: -20, marginRight: -20 }} />;
         },
       })}

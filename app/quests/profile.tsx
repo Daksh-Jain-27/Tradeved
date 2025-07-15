@@ -110,7 +110,7 @@ export default function ProfileScreen() {
           {/* Profile Card */}
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => router.push('/(tabs)/Quest')}
+            onPress={() => router.back()}
           >
             <Ionicons name="arrow-back" size={28} color="#fff" />
           </TouchableOpacity>
