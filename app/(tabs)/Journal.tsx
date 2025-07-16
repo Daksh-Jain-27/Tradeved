@@ -3,7 +3,7 @@ import { BlurView } from 'expo-blur';
 import * as DocumentPicker from 'expo-document-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, PanResponder, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, Rect } from 'react-native-svg';
 import { Header } from '../../components/Header';
@@ -580,7 +580,7 @@ export default function Journal() {
 
   const handleDayPress = (day: CalendarDay) => {
     if (day.label) {
-      router.push('/journal/JournalEntry');
+      router.push('/journal/JournalEntry' as any);
     }
   };
 
